@@ -1,17 +1,5 @@
 #include "Chromosome.hpp"
 
-//Chromosome::Chromosome(int chromosome_size)
-/*template <typename T>
-Chromosome<T>::Chromosome(int chromosome_size) : chromosomes(chromosome_size) {
-
-}*/
-
-template <typename T>
-Chromosome<T> operator[] (const unsigned int i) {
-	return this->chromosomes[i];
-}
-
-
 void init() {
     srand(time(NULL));
     

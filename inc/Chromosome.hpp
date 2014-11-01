@@ -6,31 +6,35 @@
 #include <stdlib.h>
 #include <vector>
 
-// TODO define this when the library is initialized
-//#define CHROMOSOME_SIZE 8
-
 template <class T>
 class Chromosome {
 
-	//int CHROMOSOME_SIZE;
-
 protected:
-
-    std::vector<T > chromosomes;
+    std::vector<T > chromosome;
 
 public:
 
-    Chromosome(int chromosome_size) : chromosomes(chromosome_size){
+    Chromosome(int chromosome_size) : chromosome(chromosome_size){
 
     }
 
-    T operator[] (const unsigned int i) {
+    void mutate(double mutation_rate) {
+    	// Apply mutation operation to the chromosome
+    }
+
+    void crossover(double crossover_rate, Chromosome<T > &other) {
+    	// Apply crossover operation to the chromosome
+    }
+
+    //void
+
+    /*T operator[] (const unsigned int i) {
     	return this->chromosomes[i];
     }
 
     void set (const unsigned int i, T value) {
     	this->chromosomes[i] = value;
-    }
+    }*/
 
 };
 
