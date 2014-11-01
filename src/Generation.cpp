@@ -1,3 +1,5 @@
+#include "Chromosome.hpp"
+
 // List of constants that are required about the problem:
 const int size_of_chromosome = 8;
 const double max_chromosome_value = 7.0;
@@ -13,22 +15,18 @@ const double similarity_index = 0.15;
 
 const int population_size = 64;
 
-#include <inc/chromosome.h>
 
 /*int main(int argc, char *argv[]) {
-    
-    //Skip program name if any
-    //argc -= (argc > 0);
-    //argv += (argc > 0);
 
     //const int chromosome_size = (argv[0]);
 }*/
 
 int process_generation() {
 
-    // 1. Take given chromosomes
+    // 1. Take given chromosomes (on first round must generate all of the chromosomes
     // 2. Apply ga operators
     // 3. calculate similarity
         // update mutation rate
     // return results
+	return 0;
 }
