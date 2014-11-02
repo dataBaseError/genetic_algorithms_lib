@@ -89,10 +89,31 @@ public:
 
 			population = std::vector<Chromosome<T > >(population_size);
 
-		}
+	}
+
+	void breed() {
+
+		// Iterate through the chromosomes
+			// Using a specific selection (eg roulette wheel without replacement) to pick a chromosome
+			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
+			// mutation
+			// crossover
+				// You use the specific selection to pick the next chromosome
+			// clonning
+		// This produces the population for the next population
+	}
+
+	void calculateSimilarity() {
+
+	}
 
 	// Instead of taking a fitness function it might be better to take a function pointer and call that function for the fitness function
 	// void *fitness_function(std::vector<Chromosome<T > > population);
+
+	/*static void *fitness_function(std::vector<Chromosome<T > > population) {
+
+		return NULL;
+	}*/
 
 };
 
