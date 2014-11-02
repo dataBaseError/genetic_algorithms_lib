@@ -197,6 +197,7 @@ private:
 		rand_engine = std::mt19937 (rd());
 		op_dist = std::uniform_real_distribution<> (0, 100);
 		chrom_dist = std::uniform_real_distribution<> (MINIMUM_NUMBER, population_size-1);
+		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 	}
 
 	/**

@@ -15,22 +15,24 @@ class Chromosome {
 
 protected:
     std::vector<T > chromosome;
-    std::mt19937 random_engine;
-    std::uniform_real_distribution<> rand_chrom_elem;
-    std::uniform_real_distribution<> rand_value;
+
+    // random number generator values.
+    static std::mt19937 random_engine;
+    static std::uniform_real_distribution<> rand_chrom_elem;
+    static std::uniform_real_distribution<> rand_value;
 
 
 public:
 
-    Chromosome(int chromosome_size) : chromosome(chromosome_size){
-	// Added use of a uniform_real_distribution for a better random number generation.
-	std::random_device rd;
-	random_engine = std::mt19937 (rd());
-	rand_chrom_elem = std::uniform_real_distribution<> (MINIMUM_NUMBER, chromosome.size());
+    Chromosome(unsigned int chromosome_size) : chromosome(chromosome_size){
     }
 
-    void initialize(T min_chromosome_value, T max_chromosome_value) {
-    	// Initialize the chromosome.
+    static void initialize(unsigned int chromosome_size, T min_chromosome_value, T max_chromosome_value) {
+    	
+	// Set up the random number generator engines.
+	std::random_device rd;
+	random_engine = std::mt19937 (rd());
+	rand_chrom_elem = std::uniform_real_distribution<> (MINIMUM_NUMBER, chromosome_size);
 	rand_value = std::uniform_real_distribution<> (min_chromosome_value, max_chromosome_value);
     }
 
@@ -78,9 +80,9 @@ public:
 
 private:
     void clonning(std::vector<Chromosome<T > > &children, Chromosome<T > &chromosome) {
-		// Copy value to the next population
-		children.push_back(chromosome);
-	}
+	// Copy value to the next population
+	children.push_back(chromosome);
+    }
 
     unsigned int getRandomElement() {
     	return rand_chrom_elem(random_engine);
