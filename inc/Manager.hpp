@@ -33,6 +33,9 @@ protected:
 
 	std::vector<Chromosome<T > > population;
 
+	// Need to have some way of ensure no duplication of solutions
+	std::vector<Chromosome<T > > solutions;
+
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<> op_dist;
 	std::uniform_real_distribution<> chrom_dist;
@@ -99,7 +102,10 @@ public:
 		initialize(); 
 
 	}
-	
+
+        /**
+	 * Run the algorithm for the specificed number of generations
+	 */	
 	void run() {
 		for(unsigned int i = 0; i < max_generation_number; i++) {
 			runGeneration();
@@ -111,7 +117,7 @@ public:
 	 * fitness function, the next population is bread.
 	 */
 	void runGeneration() {
-		// apply fitness function for each chromosome
+		// Fitness function would be a generic method passed as an argument that is apply to each chromosome
 		// Given that threads are going to be used:
 			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
 			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
@@ -119,6 +125,10 @@ public:
 			// - Reduce the chromosomes into smaller sets and assign them to a node
 			// - Each node can then divide the subpopulation further (possibly to a per-chromosome per thread) depending on availablity. (this step is similar to the second step with threading.
 			// Apply the fitness function
+
+		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
+			// eg; in N-Queens you can rotate the board in order to find more solutions.
+
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value. The type of the result of the fitness function can be any desired type however primitive is desired. eg:
@@ -141,7 +151,7 @@ public:
 			int selected_chromosome = getRandChromosome(); 
 			if(selected_operation == 0) {
 				// Mutation
-				population[selected_chromosome].mutation(new_population, min_chromosome_value, max_chromosome_value);
+				population[selected_chromosome].mutation(new_population);
 			}
 			else if(selected_operation == 1) {
 				// Crossover 
