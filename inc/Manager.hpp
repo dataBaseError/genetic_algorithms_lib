@@ -3,10 +3,12 @@
 #define MANAGER_HPP_
 
 #include <vector>
+#include <map>
 #include <random>
 
-//#include "FitnessFunction.hpp"
 #include "Chromosome.hpp"
+
+#define MINIMUM_NUMBER 0
 
 template <class T>
 class Manager {
@@ -14,6 +16,8 @@ protected:
 
 	unsigned int population_size;
 	unsigned int chromosome_size;
+
+	unsigned int max_generation_number;
 
 	T max_chromosome_value;
 	T min_chromosome_value;
@@ -55,17 +59,17 @@ public:
 	 * @param clonning_rate The clonning rate, the likelihood that a cromosome will be
 	 * cloned into the new population.
 	 */
-	Manager(unsigned int population_size, unsigned int chromosome_size,
+	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generations_number,
 			T max_chromosome_value, T min_chromosome_value, bool use_self_adaptive,
 			double mutation_rate, double mutation_change_rate, double similarity_index,
 			double crossover_rate, double clonning_rate) : population_size(population_size),
-			chromosome_size(chromosome_size), max_chromosome_value(max_chromosome_value),
-			min_chromosome_value(min_chromosome_value), use_self_adaptive(use_self_adaptive),
-			mutation_rate(mutation_rate), mutation_change_rate(mutation_change_rate),
-			similarity_index(similarity_index), clonning_rate(clonning_rate),
-			crossover_rate(crossover_rate) {
+			chromosome_size(chromosome_size), max_generation_number(max_generation_number),
+			max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
+			use_self_adaptive(use_self_adaptive), mutation_rate(mutation_rate),
+			mutation_change_rate(mutation_change_rate), similarity_index(similarity_index),
+			clonning_rate(clonning_rate), crossover_rate(crossover_rate),
+			population(population_size) {
 
-		population = std::vector<Chromosome<T > >(population_size);
 		initialize();
 	}
 
@@ -83,32 +87,55 @@ public:
 	 * @param clonning_rate The clonning rate, the likelihood that a cromosome will be
 	 * cloned into the new population.
 	 */
-	Manager(unsigned int population_size, unsigned int chromosome_size,
+	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
 				T max_chromosome_value, T min_chromosome_value, double mutation_rate,
 				double crossover_rate, double clonning_rate) : population_size(population_size),
-				chromosome_size(chromosome_size), max_chromosome_value(max_chromosome_value),
-				min_chromosome_value(min_chromosome_value), use_self_adaptive(false),
-				mutation_rate(mutation_rate), mutation_change_rate(0),
-				similarity_index(0), clonning_rate(clonning_rate),
-				crossover_rate(crossover_rate) {
+				chromosome_size(chromosome_size), max_generation_number(max_generation_number),
+				max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
+				use_self_adaptive(false), mutation_rate(mutation_rate), mutation_change_rate(0), 
+				similarity_index(0), clonning_rate(clonning_rate), crossover_rate(crossover_rate),
+				population(population_size) {
 
-		population = std::vector<Chromosome<T > >(population_size);
 		initialize(); 
 
 	}
-
-	void applyGeneration() {
-		// apply fitness function for each chromosome
-
-		breed(); 
+	
+	void run() {
+		for(unsigned int i = 0; i < max_generation_number; i++) {
+			runGeneration();
+		}
 	}
 
-	void breed() {
+	/**
+	 * Apply the fitness function to the population. Given the result of the
+	 * fitness function, the next population is bread.
+	 */
+	void runGeneration() {
+		// apply fitness function for each chromosome
+		// Given that threads are going to be used:
+			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
+			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
+		// Given that MPI is being used
+			// - Reduce the chromosomes into smaller sets and assign them to a node
+			// - Each node can then divide the subpopulation further (possibly to a per-chromosome per thread) depending on availablity. (this step is similar to the second step with threading.
+			// Apply the fitness function
+
+		// Main thread will wait for all children to finish executing before proceeding.
+		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value. The type of the result of the fitness function can be any desired type however primitive is desired. eg:
+		std::map<unsigned int, int > fitness_results;	
+		breed(fitness_results); 
+	}
+
+	/**
+	 * Prepare the population for the next generation by apply the genetic operations.
+	 */
+	template <typename F>
+	void breed(std::map<unsigned int, F > fitness_result) {
 		std::vector<Chromosome<T > > new_population;
 
 		// Iterate through the chromosomes
 		while(new_population.size() < population_size) {	
-			// Using a specific selection (eg roulette wheel without replacement) to pick a chromosome
+			// TODO Using a specific selection (eg roulette wheel without replacement) to pick a chromosome
 			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
 			int selected_operation = 0;
 			int selected_chromosome = getRandChromosome(); 
@@ -139,6 +166,10 @@ public:
 		}
 	}
 
+	/**
+ 	 * Apply the self-adaptive operation to determine the similarity of the chromosomes
+	 * and update the mutation rate accordingly.
+	 */
 	void selfAdapt() {		
 		// Determine how similar the chromosome is to the rest of the population
 
@@ -165,7 +196,7 @@ private:
 		std::random_device rd;
 		rand_engine = std::mt19937 (rd());
 		op_dist = std::uniform_real_distribution<> (0, 100);
-		chrom_dist = std::uniform_real_distribution<> (0, population_size-1);
+		chrom_dist = std::uniform_real_distribution<> (MINIMUM_NUMBER, population_size-1);
 	}
 
 	/**
@@ -182,11 +213,12 @@ private:
 	 * @return A number within the defined range that is not index.
 	 */
 	unsigned int getRandChromosome(unsigned int index) {
-		unsigned int val = index;
+		unsigned int val = getRandChromosome();
 
 		while(val == index) {
 			val = getRandChromosome();	
 		}
+		return val;
 	}
 };
 

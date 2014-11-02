@@ -8,13 +8,15 @@
 #include <algorithm>
 #include <random>
 
+#define MINIMUM_NUMBER 0
+
 template <class T>
 class Chromosome {
 
 protected:
     std::vector<T > chromosome;
     std::mt19937 random_engine;
-    std::uniform_real_distribution<> rand_chrom_ele;
+    std::uniform_real_distribution<> rand_chrom_elem;
     std::uniform_real_distribution<> rand_value;
 
 
@@ -24,7 +26,7 @@ public:
 	// Added use of a uniform_real_distribution for a better random number generation.
 	std::random_device rd;
 	random_engine = std::mt19937 (rd());
-	rand_chrom_ele = std::uniform_real_distribution<> (0, chromosome.size());
+	rand_chrom_elem = std::uniform_real_distribution<> (MINIMUM_NUMBER, chromosome.size());
     }
 
     void initialize(T min_chromosome_value, T max_chromosome_value) {
@@ -40,9 +42,10 @@ public:
 
     	// Apply mutation operation to the chromosome
     	if(std::is_same<T, bool>::value) {
-    		// Flip the biti
+    		// Flip the bit
     		children.back()[mutated_index] = !children.back()[mutated_index];
-    	} else {
+    	} else { 
+		// This will really only work for 'primitive types'
     		// Choose a random number within the range
     		children.back()[mutated_index] = rand_value(random_engine);
     	}
@@ -51,7 +54,7 @@ public:
     void crossover(Chromosome<T > &other, std::vector<Chromosome<T > > &children) {
     	// Copy value to the next population
     	clonning(children);
-		// Copy other to the next population
+	// Copy other to the next population
     	clonning(children, other);
 
     	// Randomly pick one point (where the cross over starts)
@@ -79,8 +82,8 @@ private:
 		children.push_back(chromosome);
 	}
 
-    int getRandomElement() {
-    	return rand_chrom_ele(random_engine);
+    unsigned int getRandomElement() {
+    	return rand_chrom_elem(random_engine);
     }
 
 };
