@@ -3,6 +3,7 @@
 #define MANAGER_HPP_
 
 #include <vector>
+#include <random>
 
 //#include "FitnessFunction.hpp"
 #include "Chromosome.hpp"
@@ -27,6 +28,10 @@ protected:
 	double crossover_rate;
 
 	std::vector<Chromosome<T > > population;
+
+	std::mt19937 rand_engine;
+	std::uniform_real_distribution<> op_dist;
+	std::uniform_real_distribution<> chrom_dist;
 
 public:
 
@@ -61,7 +66,7 @@ public:
 			crossover_rate(crossover_rate) {
 
 		population = std::vector<Chromosome<T > >(population_size);
-
+		initialize();
 	}
 
 	/**
@@ -87,24 +92,64 @@ public:
 				similarity_index(0), clonning_rate(clonning_rate),
 				crossover_rate(crossover_rate) {
 
-			population = std::vector<Chromosome<T > >(population_size);
+		population = std::vector<Chromosome<T > >(population_size);
+		initialize(); 
 
+	}
+
+	void applyGeneration() {
+		// apply fitness function for each chromosome
+
+		breed(); 
 	}
 
 	void breed() {
+		std::vector<Chromosome<T > > new_population;
 
 		// Iterate through the chromosomes
+		while(new_population.size() < population_size) {	
 			// Using a specific selection (eg roulette wheel without replacement) to pick a chromosome
 			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
-			// mutation
-			// crossover
-				// You use the specific selection to pick the next chromosome
-			// clonning
-		// This produces the population for the next population
+			int selected_operation = 0;
+			int selected_chromosome = getRandChromosome(); 
+			if(selected_operation == 0) {
+				// Mutation
+				population[selected_chromosome].mutation(new_population, min_chromosome_value, max_chromosome_value);
+			}
+			else if(selected_operation == 1) {
+				// Crossover 
+				// Pick another chromosome from the population that is not the already selected chromosome. (TODO can the chromosome be the same as the initally selected on?)
+				int other_selected_chromosome = getRandChromosome(selected_chromosome);
+
+				population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
+
+			}
+			else {
+				// Clone
+				population[selected_chromosome].clone(new_population);
+			}
+		}
+
+		// Update the population to the new population
+		population = new_population; // Check if this creates a shallow copy (since we aren't going to change new_population so we just want it to be deallocated at the end of the method).
+
+
+		if(use_self_adaptive) {
+			selfAdapt();
+		}
 	}
 
-	void calculateSimilarity() {
+	void selfAdapt() {		
+		// Determine how similar the chromosome is to the rest of the population
 
+		// Sequencial solution
+		// Iterate through the chromosomes
+			// Calculate the current chromosome with each of the others in the population
+
+		// Based on the similarity of the population identify adjust the mutaiton rate
+			//if the similarity is too high (above threshold), increase mutation rate
+			//if similarity is too low (below threshold), decrease mutation rate
+			//otherwise (same as threshold), do nothing
 	}
 
 	// Instead of taking a fitness function it might be better to take a function pointer and call that function for the fitness function
@@ -114,7 +159,35 @@ public:
 
 		return NULL;
 	}*/
+private:
+	void initialize() {
+		// Create the random objects that will be used
+		std::random_device rd;
+		rand_engine = std::mt19937 (rd());
+		op_dist = std::uniform_real_distribution<> (0, 100);
+		chrom_dist = std::uniform_real_distribution<> (0, population_size-1);
+	}
 
+	/**
+         * Get a number between 0 and population.size() - 1
+	 * @return A number between 0 and population.size()-1
+         */
+	unsigned int getRandChromosome() {
+		return chrom_dist(rand_engine);
+	}
+
+	/**
+	 * Get a random number between 0 and population.size()-1 that is not index
+	 * @param index The only value within the range that the return cannot be.
+	 * @return A number within the defined range that is not index.
+	 */
+	unsigned int getRandChromosome(unsigned int index) {
+		unsigned int val = index;
+
+		while(val == index) {
+			val = getRandChromosome();	
+		}
+	}
 };
 
 
