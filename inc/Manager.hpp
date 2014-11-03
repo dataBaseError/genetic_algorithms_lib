@@ -106,9 +106,9 @@ public:
         /**
 	 * Run the algorithm for the specificed number of generations
 	 */	
-	void run() {
+	void run(void (* fptr)(void*)) {
 		for(unsigned int i = 0; i < max_generation_number; i++) {
-			runGeneration();
+			runGeneration(&fptr);
 		}
 	}
 
@@ -116,8 +116,11 @@ public:
 	 * Apply the fitness function to the population. Given the result of the
 	 * fitness function, the next population is bread.
 	 */
-	void runGeneration() {
+	void runGeneration(void (* fptr)(void*)) {
+
 		// Fitness function would be a generic method passed as an argument that is apply to each chromosome
+		fptr(population);
+		
 		// Given that threads are going to be used:
 			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
 			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
