@@ -129,6 +129,11 @@ public:
 		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
 			// eg; in N-Queens you can rotate the board in order to find more solutions.
 
+		// Can be done concurrently with the fitness function
+		if(use_self_adaptive) {
+			selfAdapt();
+		}
+
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value. The type of the result of the fitness function can be any desired type however primitive is desired. eg:
@@ -170,10 +175,6 @@ public:
 		// Update the population to the new population
 		population = new_population; // Check if this creates a shallow copy (since we aren't going to change new_population so we just want it to be deallocated at the end of the method).
 
-
-		if(use_self_adaptive) {
-			selfAdapt();
-		}
 	}
 
 	/**

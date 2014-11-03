@@ -91,7 +91,7 @@ public:
     	// Copy value to the next population
     	clonning(children);
 	// Copy other to the next population
-    	clonning(children, other);
+    	other.clonning(children);
 
     	// Randomly pick one point (where the cross over starts)
     	int crossover_index = getRandomElement();
@@ -117,16 +117,6 @@ public:
     }
 
 private:
-
-    /**
-     * Clone the specified chromosome to the next generation.
-     * @param children The next generation.
-     * @param chromosome The chromosome to copy to the next generation.
-     */
-    void clonning(std::vector<Chromosome<T > > &children, Chromosome<T > &chromosome) {
-	// Copy value to the next population
-	children.push_back(chromosome);
-    }
 
     /**
      * Get a random index to allow for the retrieval a random element within the chromosome.
