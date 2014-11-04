@@ -5,10 +5,15 @@
 #include <vector>
 #include <map>
 #include <random>
+#include <pthread.h>
 
 #include "Chromosome.hpp"
 
 #define MINIMUM_NUMBER 0
+
+bool use_mpi = false;
+int number_of_nodes = 0;
+int number_of_threads = 5;
 
 template <class T>
 class Manager {
@@ -41,6 +46,9 @@ protected:
 	std::uniform_real_distribution<> chrom_dist;
 
 public:
+	pthread_mutex_t self_adapt_lock;
+	pthread_cond_t self_adapt_wait;
+
 
 	/**
 	 * Create a manager for GA.
@@ -133,8 +141,17 @@ public:
 			// eg; in N-Queens you can rotate the board in order to find more solutions.
 
 		// Can be done concurrently with the fitness function
-		if(use_self_adaptive) {
-			selfAdapt();
+		
+		if(use_self_adaptive) {		
+			if(use_mpi) {
+				// Use mpi to apply selfAdapt()
+			}
+			else {
+				// Create a thread to handle selfAdapt()
+				pthread_mutex_lock(&self_adapt_lock);
+				pthread_cond_signal(&self_adapt_wait);
+				pthread_mutex_unlock(&self_adapt_lock);
+			}
 		}
 
 
@@ -204,6 +221,22 @@ public:
 
 		return NULL;
 	}*/
+
+	static void *applySelfAdaptive(void *param) {
+		if(param != NULL) {
+			Manager * m = (Manager *) param;
+			while(true) {
+				pthread_mutex_lock(&m->self_adapt_lock);
+				pthread_cond_wait(&m->self_adapt_wait, &m->self_adapt_lock);
+				pthread_mutex_unlock(&m->self_adapt_lock);
+
+				m->selfAdapt();
+			}
+			
+		}
+		// Deallocate m
+	}
+
 private:
 	void initialize() {
 		// Create the random objects that will be used
@@ -212,6 +245,14 @@ private:
 		op_dist = std::uniform_real_distribution<> (0, 100);
 		chrom_dist = std::uniform_real_distribution<> (MINIMUM_NUMBER, population_size-1);
 		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
+
+		if(!use_mpi && use_self_adaptive) {
+			pthread_mutex_init(&self_adapt_lock, 0);
+			pthread_cond_init(&self_adapt_wait, 0);
+
+			pthread_t self_adapt;
+			pthread_create(&self_adapt, 0, applySelfAdaptive, (void *)this);
+		}
 	}
 
 	/**
