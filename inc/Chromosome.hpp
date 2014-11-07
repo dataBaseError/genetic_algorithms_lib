@@ -116,7 +116,7 @@ public:
 
     	// Using the index inclusive approach
     	// First gets l1 + r2 and second gets l2 + r1
-    	std::swap_ranges((*(children.end()-2)).chromosome.begin(), (*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-1)).chromosome.rbegin()+(7-crossover_index)+1);
+    	std::swap_ranges((*(children.end()-2)).chromosome.begin(), (*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-1)).chromosome.rbegin()+(chromosome.size()-1-crossover_index)+1);
 
     	// Alternative exclusive index approach
     	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+crossover_index+1, (*(children.end()-1)).rbegin()+crossover_index);
