@@ -45,7 +45,6 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the roulette wheel selection.
      */
-    //template<class T >
     virtual void init(vector<pair<Chromosome<T >, double> > &fitness)
     {
     	double lower = this->left;
