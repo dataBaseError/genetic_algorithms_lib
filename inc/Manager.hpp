@@ -43,7 +43,11 @@ protected:
 
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<> op_dist;
-	std::uniform_real_distribution<> chrom_dist;
+	std::uniform_int_distribution<int> chrom_dist;
+
+	// With this we can limit the number of threads used
+	unsigned int max_num_threads;
+	unsigned int num_threads_used;
 
 public:
 	pthread_mutex_t self_adapt_lock;
@@ -243,7 +247,7 @@ private:
 		std::random_device rd;
 		rand_engine = std::mt19937 (rd());
 		op_dist = std::uniform_real_distribution<> (0, 100);
-		chrom_dist = std::uniform_real_distribution<> (MINIMUM_NUMBER, population_size-1);
+		chrom_dist = std::uniform_int_distribution<int> (MINIMUM_NUMBER, population_size-1);
 		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 
 		if(!use_mpi && use_self_adaptive) {
