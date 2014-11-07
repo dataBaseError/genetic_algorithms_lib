@@ -5,14 +5,15 @@
 #include <vector>
 #include <utility>
 #include "Chromosome.hpp"
-#include "SimpleChromosome.hpp"
+//#include "SimpleChromosome.hpp"
 
-using namespace std;
+//using namespace std;
 
 /**
  * Selection interface, defines the operations that all selection method
  * implementations such as roulette wheel selection must provide.
  */
+template <class T >
 class Selection
 {
 public:
@@ -24,7 +25,7 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the selection.
      */
-    virtual void init(vector<pair<SimpleChromosome, double> > &fitness) = 0;
+    virtual void init(std::vector<std::pair<Chromosome<T >, double> > &fitness) = 0;
 
     /**
      * The iterator method which uses the selection method to get the next
@@ -32,7 +33,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual SimpleChromosome next() = 0;
+    virtual Chromosome<T > next() = 0;
 
     virtual ~Selection() {}
 };
