@@ -169,7 +169,7 @@ void testManager_uint() {
 		fitness[i] = std::pair<unsigned int, double >(i, fitness_values[i]);
 	}
 
-	RouletteWheel<unsigned int > rw;
+	RouletteWheel rw;
 
 	rw.init(fitness);
 

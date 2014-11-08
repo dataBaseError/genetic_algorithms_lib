@@ -13,7 +13,6 @@
  * Selection interface, defines the operations that all selection method
  * implementations such as roulette wheel selection must provide.
  */
-template <class T >
 class Selection
 {
 public:

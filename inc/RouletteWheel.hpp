@@ -10,8 +10,7 @@
 
 using namespace std;
 
-template <class T>
-class RouletteWheel : public Selection<T >
+class RouletteWheel : public Selection
 {
 private:
     mt19937 engine;
