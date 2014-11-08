@@ -4,7 +4,7 @@
 
 #include <vector>
 #include <utility>
-#include "Chromosome.hpp"
+//#include "Chromosome.hpp"
 //#include "SimpleChromosome.hpp"
 
 //using namespace std;
@@ -25,7 +25,7 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the selection.
      */
-    virtual void init(std::vector<std::pair<Chromosome<T >, double> > &fitness) = 0;
+    virtual void init(std::vector<std::pair<unsigned int, double> > &fitness) = 0;
 
     /**
      * The iterator method which uses the selection method to get the next
@@ -33,7 +33,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual Chromosome<T >& next() = 0;
+    virtual unsigned int& next() = 0;
 
     virtual ~Selection() {}
 };

@@ -160,13 +160,13 @@ void testManager_uint() {
 
 	}
 
-	std::vector<std::pair<Chromosome<unsigned int >, double > > fitness(10);
+	std::vector<std::pair<unsigned int, double > > fitness(10);
 
 	// Create a set of fitness values
 	std::vector<double > fitness_values = { 0.1, 0.4, 0.2, 0.6, 0.7, 0.8, 0.5, 0.75, 0.92, 0.8 };
 
 	for(unsigned int i = 0; i < fitness.size(); i++) {
-		fitness[i] = std::pair<Chromosome<unsigned int >, double >(pop[i], fitness_values[i]);
+		fitness[i] = std::pair<unsigned int, double >(i, fitness_values[i]);
 	}
 
 	RouletteWheel<unsigned int > rw;
@@ -175,7 +175,7 @@ void testManager_uint() {
 
 	unsigned int count = 0;
 	while (count < pop_size) {
-		Chromosome<unsigned int > cur = rw.next();
+		Chromosome<unsigned int > cur = pop[rw.next()];
 		std::cout << "Next Chromosome = ";
 		for (unsigned int i = 0; i < chromo_size; i++) {
 			std::cout << cur[i];

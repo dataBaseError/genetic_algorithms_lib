@@ -6,7 +6,7 @@
 #include <map>
 
 #include "Selection.hpp"
-#include "Chromosome.hpp"
+//#include "Chromosome.hpp"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ private:
     const double EPSILON = 1.0E-15;
     double left = 0.0;
     double right = 0.0 + EPSILON;
-    map<pair<double, double>, Chromosome<T > > selection;
+    map<pair<double, double>, unsigned int > selection;
 
 public:
     /**
@@ -45,7 +45,7 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the roulette wheel selection.
      */
-    virtual void init(vector<pair<Chromosome<T >, double> > &fitness)
+    virtual void init(std::vector<std::pair<unsigned int, double> > &fitness)
     {
     	double lower = this->left;
     	double upper = this->right;
@@ -74,7 +74,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual Chromosome<T >& next()
+    virtual unsigned int& next()
 	{
 		double rand_num = this->distribution(this->engine);
 
@@ -88,8 +88,8 @@ public:
 		}
 
 		// TODO fatal error due to floating point arithmetic if no match found!
-		Chromosome<T > chromo = Chromosome<T >();
-		return chromo;
+		unsigned int bad_return = 0;
+		return bad_return;
 	}
 };
 
