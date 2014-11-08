@@ -33,7 +33,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual unsigned int& next() = 0;
+    virtual unsigned int next() = 0;
 
     virtual ~Selection() {}
 };

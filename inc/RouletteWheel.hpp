@@ -74,7 +74,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual unsigned int& next()
+    virtual unsigned int next()
 	{
 		double rand_num = this->distribution(this->engine);
 
@@ -88,8 +88,8 @@ public:
 		}
 
 		// TODO fatal error due to floating point arithmetic if no match found!
-		unsigned int bad_return = 0;
-		return bad_return;
+		//unsigned int bad_return = 0;
+		return 0;
 	}
 };
 
