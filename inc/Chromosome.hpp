@@ -2,13 +2,9 @@
 #ifndef CHROMOSOME_HPP_
 #define CHROMOSOME_HPP_
 
-#include <iostream>
-
-#include <time.h>
-#include <stdlib.h>
-#include <vector>
-#include <algorithm>
-#include <random>
+#include <vector>	  // vector
+#include <algorithm>  // swap_ranges
+#include <random>     // mt19937, uniform_int_distribution, random_device
 
 #define MINIMUM_NUMBER 0
 
@@ -20,7 +16,7 @@ protected:
 
     // random number generator values.
     static std::mt19937 random_engine;
-    static std::uniform_int_distribution<int> rand_chrom_elem;
+    static std::uniform_int_distribution<int > rand_chrom_elem;
     // This only works with integer values
     static std::uniform_int_distribution<int > rand_value;
 
@@ -53,13 +49,14 @@ public:
     	this->chromosome = chromosome;
     }
 
-    void randChromosome() {
-    	//std::cout << chromosome.size() << std::endl;
-		for(unsigned int i = 0; i < chromosome.size(); i++) {
-			chromosome[i] = getRandomValue();
-		}
-    }
-
+    /**
+     * Initialize the population to random values. This only needs to be called on
+     * the first generation during setup.
+     * @param population The output population, note this will be cleared of any
+     * existing values.
+     * @param population_size The size of the population.
+     * @param chromosome_size The size of the chromosomes within the population.
+     */
     static void initPopulation(std::vector<Chromosome<T > > &population,
     		unsigned int population_size, unsigned int chromosome_size) {
     	population.clear();
@@ -93,7 +90,7 @@ public:
     	clonning(children);
 
     	// Identify element that will be changed
-    	int mutated_index = getRandomElement();
+    	unsigned int mutated_index = getRandomElement();
 
         // Mutate the element
     	mutateElement(mutated_index);
@@ -131,12 +128,12 @@ public:
 
     	// Using the index inclusive approach
     	// First gets l1 + r2 and second gets l2 + r1
-	// Note this approach does not work if crossover_index == 0
+    	// Note this approach does not work if crossover_index == 0
     	std::swap_ranges((*(children.end()-2)).chromosome.begin(), (*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-1)).chromosome.rbegin()+(chromosome.size()-1-crossover_index)+1);
 
     	// Alternative exclusive index approach
-	// Note this approach does not work if crossover_index == 7
-    	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+crossover_index+1, (*(children.end()-1)).rbegin()+(chromosome.size()-1-crossover_index));
+    	// Note this approach does not work if crossover_index == 7, also this has been adjusted to hopefully work but has not been tested.
+    	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+(chromosome.size()-1-crossover_index)+1, (*(children.end()-1)).rbegin()+(chromosome.size()-1-crossover_index));
 
     }
 
@@ -211,16 +208,36 @@ private:
     		// Flip the bit
     		this->chromosome[mutated_index] = !this->chromosome[mutated_index];
     	} else { 
-		// This will really only work for 'primitive types'
+    		// This will really only works for 'primitive types'
     		// Choose a random number within the range
     		this->chromosome[mutated_index] = getRandomValue(this->chromosome[mutated_index]);
     	}
     }
 
+    /**
+     * Generate a random chromosome.
+     */
+    void randChromosome() {
+		for(unsigned int i = 0; i < chromosome.size(); i++) {
+			chromosome[i] = getRandomValue();
+		}
+    }
+
+    /**
+     * Generate a random value for a chromosome element.
+     * @return
+     */
     T getRandomValue() {
     	return rand_value(random_engine);
     }
 
+    /**
+     * Generate a random value for the chromosome element that is not
+     * equal to the one provided.
+     * @param prev The value for which the return will not be equal to.
+     * @return The random value for the chromosome element that is not
+     * equal to prev.
+     */
     T getRandomValue(T prev) {
         T val = getRandomValue();
 

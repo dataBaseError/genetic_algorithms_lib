@@ -2,10 +2,9 @@
 #ifndef MANAGER_HPP_
 #define MANAGER_HPP_
 
-#include <vector>
-#include <map>
-#include <random>
-#include <pthread.h>
+#include <vector>			 // vector
+#include <random>            // mt19937, uniform_int_distribution, random_device
+#include <pthread.h>		 // pthreads
 
 #include "Chromosome.hpp"
 #include "RouletteWheel.hpp"
@@ -29,6 +28,7 @@ protected:
 	double mutation_change_rate;
 	double similarity_index;
 
+	// TODO check if clonning rate is by convention (1 - (mutation_rate + crossover)).
 	double clonning_rate;
 
 	double crossover_rate;
@@ -179,7 +179,7 @@ public:
 		// Iterate through the chromosomes
 		while(new_population.size() < population_size) {	
 			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
-			unsigned int selected_operation = 0;
+			unsigned int selected_operation = 0; // TODO get a random operation (potentially use roulettewheel
 			unsigned int selected_chromosome = rw.next();
 			if(selected_operation == 0) {
 				// Mutation
@@ -187,7 +187,7 @@ public:
 			}
 			else if(selected_operation == 1) {
 				// Crossover 
-				unsigned int other_selected_chromosome = rw.next();
+				unsigned int other_selected_chromosome = rw.next(); // TODO check if this can be the same as the already selected chromosome
 
 				population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
 
