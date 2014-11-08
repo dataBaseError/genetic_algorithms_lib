@@ -8,8 +8,9 @@
 #include <pthread.h>
 
 #include "Chromosome.hpp"
+#include "RouletteWheel.hpp"
 
-#define MINIMUM_NUMBER 0
+//#define MINIMUM_NUMBER 0
 
 template <class T>
 class Manager {
@@ -37,9 +38,11 @@ protected:
 	// Need to have some way of ensure no duplication of solutions
 	std::vector<Chromosome<T > > solutions;
 
+	RouletteWheel rw;
+
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<> op_dist;
-	std::uniform_int_distribution<int> chrom_dist;
+	//std::uniform_int_distribution<int> chrom_dist;
 
 	// With this we can limit the number of threads used
 	unsigned int max_num_threads;
@@ -169,23 +172,22 @@ public:
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
 	//template <class F>
-	void breed(std::map<unsigned int, double > fitness_result) {
+	void breed(std::vector<std::pair<unsigned int, double> > &fitness) {
 		std::vector<Chromosome<T > > new_population;
+		rw.init(fitness);
 
 		// Iterate through the chromosomes
 		while(new_population.size() < population_size) {	
-			// TODO Using a specific selection (eg roulette wheel without replacement) to pick a chromosome
 			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
-			int selected_operation = 0;
-			int selected_chromosome = getRandChromosome(); 
+			unsigned int selected_operation = 0;
+			unsigned int selected_chromosome = rw.next();
 			if(selected_operation == 0) {
 				// Mutation
 				population[selected_chromosome].mutation(new_population);
 			}
 			else if(selected_operation == 1) {
 				// Crossover 
-				// Pick another chromosome from the population that is not the already selected chromosome. (TODO can the chromosome be the same as the initally selected on?)
-				int other_selected_chromosome = getRandChromosome(selected_chromosome);
+				unsigned int other_selected_chromosome = rw.next();
 
 				population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
 
@@ -249,7 +251,7 @@ private:
 		std::random_device rd;
 		rand_engine = std::mt19937 (rd());
 		op_dist = std::uniform_real_distribution<> (0, 100);
-		chrom_dist = std::uniform_int_distribution<int> (MINIMUM_NUMBER, population_size-1);
+		//chrom_dist = std::uniform_int_distribution<int> (MINIMUM_NUMBER, population_size-1);
 		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 
 		if(!use_mpi && use_self_adaptive) {
@@ -259,28 +261,6 @@ private:
 			pthread_t self_adapt;
 			pthread_create(&self_adapt, 0, applySelfAdaptive, (void *)this);
 		}
-	}
-
-	/**
-         * Get a number between 0 and population.size() - 1
-	 * @return A number between 0 and population.size()-1
-         */
-	unsigned int getRandChromosome() {
-		return chrom_dist(rand_engine);
-	}
-
-	/**
-	 * Get a random number between 0 and population.size()-1 that is not index
-	 * @param index The only value within the range that the return cannot be.
-	 * @return A number within the defined range that is not index.
-	 */
-	unsigned int getRandChromosome(unsigned int index) {
-		unsigned int val = getRandChromosome();
-
-		while(val == index) {
-			val = getRandChromosome();	
-		}
-		return val;
 	}
 };
 
