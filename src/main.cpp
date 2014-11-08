@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "Chromosome.hpp"
+#include "Manager.hpp"
 
 /*
 bool testChromosomeCreation() {
@@ -117,6 +118,28 @@ void testChromosomeCreation_uint() {
 
 	std::cout << "All Chromosome<int> Tests Passed" << std::endl;
 
+}
+
+void testManager_uint() {
+	unsigned int pop_size = 10;
+	unsigned int chromo_size = 8;
+	unsigned int min_value = 0;
+	unsigned int max_value = 7;
+
+	unsigned int max_gen = 100;
+	bool use_self_adaptive = true;
+	double mutation_rate = 0.1;
+	double mutation_change_rate = 0.1;
+	double similarity_index = 0.1;
+	double crossover_rate = 0.4;
+	double clonning_rate = 0.5;
+
+	Manager<unsigned int > manger(pop_size, 8, max_gen,
+			max_value, min_value, use_self_adaptive,
+			mutation_rate, mutation_change_rate, similarity_index,
+			crossover_rate, clonning_rate);
+
+	 //manager.
 }
 
 int main(int argc, char **argv) {
