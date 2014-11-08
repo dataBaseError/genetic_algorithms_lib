@@ -27,6 +27,9 @@ protected:
 
 public:
     
+    /**
+     * Default contructor to allow for easier creation.
+     */
     Chromosome() {
 
     }
@@ -51,7 +54,7 @@ public:
     }
 
     void randChromosome() {
-    	std::cout << chromosome.size() << std::endl;
+    	//std::cout << chromosome.size() << std::endl;
 		for(unsigned int i = 0; i < chromosome.size(); i++) {
 			chromosome[i] = getRandomValue();
 		}

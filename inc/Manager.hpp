@@ -168,8 +168,8 @@ public:
 	/**
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
-	template <typename F>
-	void breed(std::map<unsigned int, F > fitness_result) {
+	//template <class F>
+	void breed(std::map<unsigned int, double > fitness_result) {
 		std::vector<Chromosome<T > > new_population;
 
 		// Iterate through the chromosomes
