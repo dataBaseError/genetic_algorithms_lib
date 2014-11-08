@@ -74,7 +74,7 @@ public:
      *
      * @return The next chromosome selected.
      */
-    virtual Chromosome<T > next()
+    virtual Chromosome<T >& next()
 	{
 		double rand_num = this->distribution(this->engine);
 
@@ -88,7 +88,8 @@ public:
 		}
 
 		// TODO fatal error due to floating point arithmetic if no match found!
-		return NULL;
+		Chromosome<T > chromo = Chromosome<T >();
+		return chromo;
 	}
 };
 
