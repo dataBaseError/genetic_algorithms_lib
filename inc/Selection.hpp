@@ -4,10 +4,6 @@
 
 #include <vector>
 #include <utility>
-//#include "Chromosome.hpp"
-//#include "SimpleChromosome.hpp"
-
-//using namespace std;
 
 /**
  * Selection interface, defines the operations that all selection method
