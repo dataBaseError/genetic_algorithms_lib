@@ -27,6 +27,10 @@ protected:
 
 public:
     
+    Chromosome() {
+
+    }
+
     /**
      * Create a chromosome of the given size
      * @param chromosome_size The size of the chromosome.

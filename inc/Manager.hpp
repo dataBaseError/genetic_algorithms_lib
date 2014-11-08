@@ -11,10 +11,6 @@
 
 #define MINIMUM_NUMBER 0
 
-bool use_mpi = false;
-int number_of_nodes = 0;
-int number_of_threads = 5;
-
 template <class T>
 class Manager {
 protected:
@@ -49,6 +45,11 @@ protected:
 	unsigned int max_num_threads;
 	unsigned int num_threads_used;
 
+	// Library flags
+	bool use_mpi = false;
+	int number_of_nodes = 0;
+	int number_of_threads = 5;
+
 public:
 	pthread_mutex_t self_adapt_lock;
 	pthread_cond_t self_adapt_wait;
@@ -82,9 +83,8 @@ public:
 			max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
 			use_self_adaptive(use_self_adaptive), mutation_rate(mutation_rate),
 			mutation_change_rate(mutation_change_rate), similarity_index(similarity_index),
-			clonning_rate(clonning_rate), crossover_rate(crossover_rate),
-			population(population_size) {
-
+			clonning_rate(clonning_rate), crossover_rate(crossover_rate) {
+		population = std::vector<Chromosome<T > >(population_size);
 		initialize();
 	}
 
@@ -239,6 +239,8 @@ public:
 			
 		}
 		// Deallocate m
+
+		return NULL;
 	}
 
 private:
