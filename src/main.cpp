@@ -43,11 +43,6 @@ void testChromosomeCreation_uint() {
 	assert(chromosome == children[0]);
 	std::cout << "Passed parent equal to clone" << std::endl;
 
-	Chromosome<unsigned int > val = children.back();
-	//for (auto it=(*val).begin(); it!=(*val).end(); ++it)
-	//	std::cout << ' ' << *it;
-	//std::cout << '\n';
-
 	chromosome.mutate(children);
 
 	// Check that the child is actually in the children
@@ -85,6 +80,7 @@ void testChromosomeCreation_uint() {
 		if(i +1 < 8) {
 			std::cout << ",";
 		}
+
 	}
 	std::cout << '\n';
 
@@ -100,7 +96,26 @@ void testChromosomeCreation_uint() {
 	}
 	std::cout << '\n';
 
-	cout << "All Chromosome<int> Tests Passed" << endl;
+	unsigned int pop_size = 10;
+	std::vector<Chromosome<int > > population;
+	Chromosome<int >::initialize(chromo_size, min_value, max_value);
+	Chromosome<int >::initPopulation(population, pop_size, chromo_size);
+
+	// Check that the population is initialized to the correct size.
+	assert(population.size() == pop_size);
+
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << population[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
+
+	std::cout << "All Chromosome<int> Tests Passed" << std::endl;
 
 }
 

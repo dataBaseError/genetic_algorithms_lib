@@ -21,7 +21,8 @@ protected:
     // random number generator values.
     static std::mt19937 random_engine;
     static std::uniform_int_distribution<int> rand_chrom_elem;
-    static std::uniform_real_distribution<> rand_value;
+    // This only works with integer values
+    static std::uniform_int_distribution<int > rand_value;
 
 
 public:
@@ -45,7 +46,22 @@ public:
     	this->chromosome = chromosome;
     }
 
-    //TODO create random chromosome generator.
+    void randChromosome() {
+    	std::cout << chromosome.size() << std::endl;
+		for(unsigned int i = 0; i < chromosome.size(); i++) {
+			chromosome[i] = getRandomValue();
+		}
+    }
+
+    static void initPopulation(std::vector<Chromosome<T > > &population,
+    		unsigned int population_size, unsigned int chromosome_size) {
+    	population.clear();
+    	for(unsigned int i = 0; i < population_size; i++) {
+    		Chromosome<T > chrom (chromosome_size);
+    		chrom.randChromosome();
+    		population.push_back(chrom);
+    	}
+    }
 
     /**
      * Set up the random number generator engines to allow within the defined ranges.
@@ -59,7 +75,7 @@ public:
 		std::random_device rd;
 		random_engine = std::mt19937 (rd());
 		rand_chrom_elem = std::uniform_int_distribution<int> (MINIMUM_NUMBER, chromosome_size - 1);
-		rand_value = std::uniform_real_distribution<> (min_chromosome_value, max_chromosome_value);
+		rand_value = std::uniform_int_distribution<int > (min_chromosome_value, max_chromosome_value);
     }
 
     /**
@@ -72,15 +88,8 @@ public:
     	// Identify element that will be changed
     	int mutated_index = getRandomElement();
 
-    	// Apply mutation operation to the chromosome
-    	if(std::is_same<T, bool>::value) {
-    		// Flip the bit
-    		children.back()[mutated_index] = !children.back()[mutated_index];
-    	} else { 
-		// This will really only work for 'primitive types'
-    		// Choose a random number within the range
-    		children.back()[mutated_index] = rand_value(random_engine);
-    	}
+        // Mutate the element
+    	mutateElement(mutated_index);
     }
 
     /**
@@ -111,15 +120,16 @@ public:
     	other.clonning(children);
 
     	// Randomly pick one point (where the cross over starts)
-    	// Doesn't work for index of 0 so we use restrictive getRandomElement
     	int crossover_index = getRandomElement(0);
 
     	// Using the index inclusive approach
     	// First gets l1 + r2 and second gets l2 + r1
+	// Note this approach does not work if crossover_index == 0
     	std::swap_ranges((*(children.end()-2)).chromosome.begin(), (*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-1)).chromosome.rbegin()+(chromosome.size()-1-crossover_index)+1);
 
     	// Alternative exclusive index approach
-    	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+crossover_index+1, (*(children.end()-1)).rbegin()+crossover_index);
+	// Note this approach does not work if crossover_index == 7
+    	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+crossover_index+1, (*(children.end()-1)).rbegin()+(chromosome.size()-1-crossover_index));
 
     }
 
@@ -188,13 +198,38 @@ private:
 		return val;
 	}
 
+    void mutateElement(unsigned int mutated_index) {
+    	// Apply mutation operation to the chromosome
+    	if(std::is_same<T, bool>::value) {
+    		// Flip the bit
+    		this->chromosome[mutated_index] = !this->chromosome[mutated_index];
+    	} else { 
+		// This will really only work for 'primitive types'
+    		// Choose a random number within the range
+    		this->chromosome[mutated_index] = getRandomValue(this->chromosome[mutated_index]);
+    	}
+    }
+
+    T getRandomValue() {
+    	return rand_value(random_engine);
+    }
+
+    T getRandomValue(T prev) {
+        T val = getRandomValue();
+
+        while(val == prev) {
+            val = getRandomValue();
+        }
+        return val;
+    }
+
 };
 
 template<class T>
 std::mt19937 Chromosome<T >::random_engine;
 template<class T>
-std::uniform_int_distribution<int> Chromosome<T >::rand_chrom_elem;
+std::uniform_int_distribution<int > Chromosome<T >::rand_chrom_elem;
 template<class T>
-std::uniform_real_distribution<> Chromosome<T >::rand_value;
+std::uniform_int_distribution<int > Chromosome<T >::rand_value;
 
 #endif /* CHROMOSOME_HPP_ */
