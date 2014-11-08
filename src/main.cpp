@@ -8,6 +8,7 @@
 
 #include "Chromosome.hpp"
 #include "Manager.hpp"
+#include "RouletteWheel.hpp"
 
 /*
 bool testChromosomeCreation() {
@@ -134,10 +135,57 @@ void testManager_uint() {
 	double crossover_rate = 0.4;
 	double clonning_rate = 0.5;
 
-	Manager<unsigned int > manger(pop_size, 8, max_gen,
+	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
 			max_value, min_value, use_self_adaptive,
 			mutation_rate, mutation_change_rate, similarity_index,
 			crossover_rate, clonning_rate);
+
+	// Create a test population of 10
+	std::vector<Chromosome<unsigned int > > pop(10);
+
+	// Init the chromosome operations
+	Chromosome<unsigned int >::initialize(chromo_size, min_value, max_value);
+	// Create a random chromosome population
+	Chromosome<unsigned int >::initPopulation(pop, pop_size, chromo_size);
+
+	std::cout << "Init pop = " << std::endl;
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
+
+	std::vector<std::pair<Chromosome<unsigned int >, double > > fitness(10);
+
+	// Create a set of fitness values
+	std::vector<double > fitness_values = { 0.1, 0.4, 0.2, 0.6, 0.7, 0.8, 0.5, 0.75, 0.92, 0.8 };
+
+	for(unsigned int i = 0; i < fitness.size(); i++) {
+		fitness[i] = std::pair<Chromosome<unsigned int >, double >(pop[i], fitness_values[i]);
+	}
+
+	RouletteWheel<unsigned int > rw;
+
+	rw.init(fitness);
+
+	unsigned int count = 0;
+	while (count < pop_size) {
+		Chromosome<unsigned int > cur = rw.next();
+		std::cout << "Next Chromosome = ";
+		for (unsigned int i = 0; i < chromo_size; i++) {
+			std::cout << cur[i];
+			if (i+1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << std::endl;
+		count++;
+	}
 
 	 //manager.
 }
@@ -149,6 +197,9 @@ int main(int argc, char **argv) {
 	argv += (argc > 0);
 
 	testChromosomeCreation_uint();
+
+	std::cout << std::endl;
+	testManager_uint();
 
 	return 0;
 }
