@@ -9,6 +9,7 @@
 #include "Chromosome.hpp"
 #include "Manager.hpp"
 #include "RouletteWheel.hpp"
+#include "SafeQueue.hpp"
 
 /*
 bool testChromosomeCreation() {
