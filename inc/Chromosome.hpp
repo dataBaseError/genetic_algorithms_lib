@@ -86,8 +86,8 @@ public:
      * Apply the mutation operation to the chromosome and put it into the next generation.
      * @param children The next generation of chromosomes (the next population) that is currently being bread.
      */
-    void mutate(std::vector<Chromosome<T > > &children) {
-    	clonning(children);
+    void mutate() {
+    	//clonning(children);
 
     	// Identify element that will be changed
     	unsigned int mutated_index = getRandomElement();
@@ -202,7 +202,16 @@ private:
 		return val;
 	}
 
+	/**
+	 * Mutate the given element within the chromosome
+	 * @param mutated_index The index of the element within the chromosome that will be mutated.
+	 */
     void mutateElement(unsigned int mutated_index) {
+
+	// Could check if it is none primitive and call an expected function
+	// Aka all 'data' types that are passed (that are not bool or int) are a child of a abstract class Gene
+	// This will define a abstract accessor methods static method Gene::randomElement(Gene)
+	// And potential other types of data members.
     	// Apply mutation operation to the chromosome
     	if(std::is_same<T, bool>::value) {
     		// Flip the bit

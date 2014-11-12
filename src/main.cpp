@@ -45,7 +45,8 @@ void testChromosomeCreation_uint() {
 	assert(chromosome == children[0]);
 	std::cout << "Passed parent equal to clone" << std::endl;
 
-	chromosome.mutate(children);
+	chromosome.clonning(children);
+	children.back().mutate();
 
 	// Check that the child is actually in the children
 	assert(children.size() == 2);
@@ -133,12 +134,12 @@ void testManager_uint() {
 	double mutation_change_rate = 0.1;
 	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
-	double clonning_rate = 0.5;
+	//double clonning_rate = 0.5;
 
 	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
 			max_value, min_value, use_self_adaptive,
 			mutation_rate, mutation_change_rate, similarity_index,
-			crossover_rate, clonning_rate);
+			crossover_rate);
 
 	// Create a test population of 10
 	std::vector<Chromosome<unsigned int > > pop(10);
