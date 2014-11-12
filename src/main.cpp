@@ -123,7 +123,7 @@ void testChromosomeCreation_uint() {
 
 }
 
-void testManager_uint() {
+void testSelection_uint() {
 	unsigned int pop_size = 10;
 	unsigned int chromo_size = 8;
 	unsigned int min_value = 0;
@@ -137,13 +137,10 @@ void testManager_uint() {
 	double crossover_rate = 0.4;
 	//double clonning_rate = 0.5;
 
-	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
-			max_value, min_value, use_self_adaptive,
-			mutation_rate, mutation_change_rate, similarity_index,
-			crossover_rate);
+
 
 	// Create a test population of 10
-	std::vector<Chromosome<unsigned int > > pop(10);
+	std::vector<Chromosome<unsigned int > > pop(pop_size);
 
 	// Init the chromosome operations
 	Chromosome<unsigned int >::initialize(chromo_size, min_value, max_value);
@@ -162,7 +159,7 @@ void testManager_uint() {
 
 	}
 
-	std::vector<std::pair<unsigned int, double > > fitness(10);
+	std::vector<std::pair<unsigned int, double > > fitness(pop_size);
 
 	// Create a set of fitness values
 	std::vector<double > fitness_values = { 0.1, 0.4, 0.2, 0.6, 0.7, 0.8, 0.5, 0.75, 0.92, 0.8 };
@@ -189,7 +186,39 @@ void testManager_uint() {
 		count++;
 	}
 
-	 //manager.
+	// TODO test Manager::breed
+	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
+					max_value, min_value, use_self_adaptive,
+					mutation_rate, mutation_change_rate, similarity_index,
+					crossover_rate);
+
+	initPopulation();
+
+	manager.breed(fitness);
+}
+
+void testManager_uint() {
+
+	unsigned int pop_size = 10;
+	unsigned int chromo_size = 8;
+	unsigned int min_value = 0;
+	unsigned int max_value = 7;
+
+	unsigned int max_gen = 1;
+	bool use_self_adaptive = true;
+	double mutation_rate = 0.1;
+	double mutation_change_rate = 0.1;
+	double similarity_index = 0.1;
+	double crossover_rate = 0.4;
+
+	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
+				max_value, min_value, use_self_adaptive,
+				mutation_rate, mutation_change_rate, similarity_index,
+				crossover_rate);
+
+	//TODO test Manager::run after calling for a single generation
+
+	 //manager.run();
 }
 
 int main(int argc, char **argv) {
@@ -201,6 +230,11 @@ int main(int argc, char **argv) {
 	testChromosomeCreation_uint();
 
 	std::cout << std::endl;
+
+	testSelection_uint();
+
+	std::cout << std::endl;
+
 	testManager_uint();
 
 	return 0;

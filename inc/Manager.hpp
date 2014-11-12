@@ -39,10 +39,12 @@ protected:
 	std::vector<Chromosome<T > > solutions;
 
 	RouletteWheel rw;
-	RouletteWheel op_roulettewheel;
+	//RouletteWheel op_roulettewheel;
 
 	SafeQueue<unsigned int > safe_queue;
 	SafeQueue<std::pair<unsigned int, double > > result_queue;
+
+	std::vector<pthread_t > threadpool;
 
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<float> op_dist;
@@ -57,6 +59,7 @@ protected:
 	int number_of_nodes = 0;
 	int number_of_threads = 5;
 
+	// Fitness function
 	double (*fitness_function)(Chromosome<T >);
 
 public:
@@ -133,74 +136,15 @@ public:
 	 */	
 	void run(double (*fitness_function)(Chromosome<T >)) {
 		this->fitness_function = fitness_function;
+
+		initPopulation();
+
 		for(unsigned int i = 0; i < max_generation_number; i++) {
 			runGeneration();
 		}
 	}
 
-	/**
-	 * Apply the fitness function to the population. Given the result of the
-	 * fitness function, the next population is bread.
-	 *
-	 * There are several approaches we could take to mapping the number of available threads to the problems:
-	 * 1. Use static division of work. That is to say, divide the work up as evenly as possible ahead of problem solving.
-	 * eg. 1 thread is given pop_size / (available_threads - 1) chromosomes to solve the fitness function for.
-	 * 	- Adv. less communication and no need for a management thread.
-	 * 	- Adv. Easy to implement.
-	 * 	- Dis. if more threads become available become available (most likely case, they finish their set of problems early)
-	 * 	  then they will not be taken advantage of.
-	 * 2. Use dynamic division of work. Assign the threads a work as the become available. This can happen in two ways;
-	 * 2.1 Use static division and then load balance if new threads become available for work (while more work is pending).
-	 * 	- Adv. basically the same as the static except take advantage of available resources
-	 * 	- Dis. Re-balancing will take more communication.
-	 * 	- Dis. Harder to implement (have to create a balancer which will transfer queued problems to the free thread.
-	 * 	- Dis. Requires a managment thread.
-	 * 2.2 Each thread is given a problem to solve and will pull off another problem once it is finished.
-	 * 	- Adv. Can effectively balance the load
-	 * 	- Adv. Easy to implement (with shared memory which threads have).
-	 * 	- Dis. Requires more communication
-	 * 	- Dis. Requires a manager thread
-	 */
-	void runGeneration() {
-
-		// Fitness function would be a generic method passed as an argument that is apply to each chromosome
-		//fptr(population);
-
-		for(unsigned int i = 0; i < this->population_size; i++) {
-			// Push on the index for each chromosome in the population.
-			safe_queue.push(i);
-		}
-		
-		// Given that threads are going to be used:
-			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
-			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
-
-		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
-			// eg; in N-Queens you can rotate the board in order to find more solutions.
-
-		// Can be done concurrently with the fitness function
-		if(use_self_adaptive) {
-				// Create a thread to handle selfAdapt()
-				pthread_mutex_lock(&self_adapt_lock);
-				pthread_cond_signal(&self_adapt_wait);
-				pthread_mutex_unlock(&self_adapt_lock);
-		}
-
-		// Main thread will wait for all children to finish executing before proceeding.
-		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
-		std::map<unsigned int, double > fitness_results;
-		std::pair<unsigned int, double > result;
-
-		// Wait for all the chromosomes to finish calculating their fitness value.
-		while(fitness_results.size() < population_size) {
-			result = result_queue.waitToPop();
-			fitness_results[result.first] = result.second;
-		}
-
-		breed(fitness_results); 
-	}
-
-	/**
+	/** TODO make this private (after testing)
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
 	void breed(std::vector<std::pair<unsigned int, double> > &fitness) {
@@ -268,14 +212,10 @@ public:
 			//otherwise (same as threshold), do nothing
 	}
 
-	// Instead of taking a fitness function it might be better to take a function pointer and call that function for the fitness function
-	// void *fitness_function(std::vector<Chromosome<T > > population);
-
-	/*static void *fitness_function(std::vector<Chromosome<T > > population) {
-
-		return NULL;
-	}*/
-
+	/**
+	 * TODO document
+	 * @param param
+	 */
 	static void *applySelfAdaptive(void *param) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
@@ -285,6 +225,8 @@ public:
 				pthread_mutex_unlock(&m->self_adapt_lock);
 
 				m->selfAdapt();
+
+				// proceed with calculating some fitness functions
 			}
 			
 		}
@@ -292,6 +234,10 @@ public:
 		return NULL;
 	}
 
+	/**
+	 * TODO document
+	 * @param param
+	 */
 	static void *calcFitnessFunction(void *param) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
@@ -300,8 +246,8 @@ public:
 
 				// Can we trust the user to not change the chromosome? No.
 				Chromosome<T > t = m->population[problem_index];
-				double result = m->fitness_function(t);
-				m->result_queue.push(std::make_pair(problem_index, result));
+				std::pair<unsigned int, double >temp (problem_index, m->fitness_function(t));
+				m->result_queue.push(temp);
 			}
 
 		}
@@ -310,17 +256,37 @@ public:
 		return NULL;
 	}
 
+	/**
+	 * TODO make this private (after testing)
+	 * Create an initial population of random chromosoms.
+	 */
+	void initPopulation() {
+		Chromosome<unsigned int >::initPopulation(this->population, this->population_size, this->chromosome_size);
+	}
+
 private:
+
+	/**
+	 * TODO document
+	 */
 	void initialize() {
 		// Create the random objects that will be used
 		std::random_device rd;
 		rand_engine = std::mt19937 (rd());
 		op_dist = std::uniform_real_distribution<float> (0.0, 1.0);
 		mutation_dist = std::uniform_real_distribution<float> (0.0, 1.0);
-		//chrom_dist = std::uniform_int_distribution<int> (MINIMUM_NUMBER, population_size-1);
 		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 
-		// TODO create simple thread pool (vector of threads) which will all be given calcFitnessFunction as their function
+		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
+		for(unsigned int i = 0; i < number_of_threads - use_self_adaptive; i++) {
+			pthread_t thread;
+			threadpool.push_back(thread);
+			pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
+
+			// TODO decide if this is useful
+			this->num_threads_used++;
+		}
+
 
 		if(use_self_adaptive) {
 			pthread_mutex_init(&self_adapt_lock, 0);
@@ -331,10 +297,73 @@ private:
 		}
 	}
 
+	/**
+	 * TODO document
+	 * @param chromosome
+	 */
 	void mutate(Chromosome<T > &chromosome) {
 		if(mutation_dist(rand_engine) <= mutation_rate) {
 			chromosome.mutate();
 		}
+	}
+
+	/** TODO clean up this documentation
+	 * Apply the fitness function to the population. Given the result of the
+	 * fitness function, the next population is bread.
+	 *
+	 * There are several approaches we could take to mapping the number of available threads to the problems:
+	 * 1. Use static division of work. That is to say, divide the work up as evenly as possible ahead of problem solving.
+	 * eg. 1 thread is given pop_size / (available_threads - 1) chromosomes to solve the fitness function for.
+	 * 	- Adv. less communication and no need for a management thread.
+	 * 	- Adv. Easy to implement.
+	 * 	- Dis. if more threads become available become available (most likely case, they finish their set of problems early)
+	 * 	  then they will not be taken advantage of.
+	 * 2. Use dynamic division of work. Assign the threads a work as the become available. This can happen in two ways;
+	 * 2.1 Use static division and then load balance if new threads become available for work (while more work is pending).
+	 * 	- Adv. basically the same as the static except take advantage of available resources
+	 * 	- Dis. Re-balancing will take more communication.
+	 * 	- Dis. Harder to implement (have to create a balancer which will transfer queued problems to the free thread.
+	 * 	- Dis. Requires a managment thread.
+	 * 2.2 Each thread is given a problem to solve and will pull off another problem once it is finished.
+	 * 	- Adv. Can effectively balance the load
+	 * 	- Adv. Easy to implement (with shared memory which threads have).
+	 * 	- Dis. Requires more communication
+	 * 	- Dis. Requires a manager thread
+	 */
+	void runGeneration() {
+
+		// Given that threads are going to be used:
+			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
+			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
+		for(unsigned int i = 0; i < this->population_size; i++) {
+			// Push on the index for each chromosome in the population.
+			safe_queue.push(i);
+		}
+		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
+			// eg; in N-Queens you can rotate the board in order to find more solutions.
+
+		// Can be done concurrently with the fitness function
+		if(use_self_adaptive) {
+				// Create a thread to handle selfAdapt()
+				pthread_mutex_lock(&self_adapt_lock);
+				pthread_cond_signal(&self_adapt_wait);
+				pthread_mutex_unlock(&self_adapt_lock);
+		}
+
+		// Main thread will wait for all children to finish executing before proceeding.
+		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
+		std::map<unsigned int, double > fitness_results;
+		std::pair<unsigned int, double > result;
+
+		// Wait for all the chromosomes to finish calculating their fitness value.
+		while(fitness_results.size() < population_size) {
+			result = result_queue.waitToPop();
+			fitness_results[result.first] = result.second;
+		}
+
+		// TODO search for results
+
+		breed(fitness_results);
 	}
 };
 
