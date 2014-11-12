@@ -65,6 +65,7 @@ public:
 		T val = values.front();
 		values.pop();
 		pthread_mutex_unlock(&access_lock);
+		return val;
 	}
 
 	void push(T &val) {
