@@ -124,12 +124,12 @@ public:
     	other.clonning(children);
 
     	// Randomly pick one point (where the cross over starts)
-    	int crossover_index = getRandomElement(0);
+    	int crossover_index = getRandomElement(7);
 
     	// Using the index inclusive approach
     	// First gets l1 + r2 and second gets l2 + r1
     	// Note this approach does not work if crossover_index == 0
-    	std::swap_ranges((*(children.end()-2)).chromosome.begin(), (*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-1)).chromosome.rbegin()+(chromosome.size()-1-crossover_index)+1);
+    	std::swap_ranges((*(children.end()-2)).chromosome.begin()+crossover_index, (*(children.end()-2)).chromosome.end(), (*(children.end()-1)).chromosome.begin()+crossover_index);
 
     	// Alternative exclusive index approach
     	// Note this approach does not work if crossover_index == 7, also this has been adjusted to hopefully work but has not been tested.

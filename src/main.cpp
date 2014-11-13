@@ -34,7 +34,7 @@ void testChromosomeCreation_uint() {
 
 	// Uses the default constructor to make all the ints.
 	Chromosome<unsigned int> chromosome(chromo_size); // Creates {0,0,0,0,0,0,0,0,0,0}
-	Chromosome<unsigned int> chromosome2(rand_chrom); // Creates {0,0,0,0,0,0,0,0,0,0}
+	Chromosome<unsigned int> chromosome2(rand_chrom);
 	Chromosome<unsigned int>::initialize(chromo_size, min_value, max_value);
 	chromosome.clonning(children);
 
@@ -187,14 +187,66 @@ void testSelection_uint() {
 	}
 
 	// TODO test Manager::breed
-	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
+	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 					max_value, min_value, use_self_adaptive,
 					mutation_rate, mutation_change_rate, similarity_index,
 					crossover_rate);
 
-	initPopulation();
+	manager.initPopulation();
 
 	manager.breed(fitness);
+
+	std::cout << "Breed the chromosomes" << std::endl;
+
+	std::vector<Chromosome<unsigned int > > breed_pop = manager.getPopulation();
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << breed_pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
+
+	std::vector<unsigned int > regTwo = {2,3,4,5,6,7,8,9};
+	std::vector<unsigned int > regOne = {10,11,12,13,14,15,16,17};
+	Chromosome<unsigned int > first(regOne);
+	Chromosome<unsigned int > second(regTwo);
+	std::vector<Chromosome<unsigned int > >child;
+
+	first.crossover(second, child);
+
+	std::cout << "CHROMOSOME CROSSOVER" << std::endl;
+	for (unsigned int j = 0; j < chromo_size; j++) {
+		std::cout << first[j];
+		if(j +1 < chromo_size) {
+			std::cout << ",";
+		}
+	}
+	std::cout << '\n';
+
+	for (unsigned int j = 0; j < chromo_size; j++) {
+		std::cout << second[j];
+		if(j +1 < chromo_size) {
+			std::cout << ",";
+		}
+	}
+	std::cout << '\n';
+
+	std::cout << "RESULT" << std::endl;
+
+	for (unsigned int i = 0; i < 2; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << child[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
 }
 
 void testManager_uint() {
@@ -211,7 +263,7 @@ void testManager_uint() {
 	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 
-	Manager<unsigned int > manger(pop_size, chromo_size, max_gen,
+	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 				max_value, min_value, use_self_adaptive,
 				mutation_rate, mutation_change_rate, similarity_index,
 				crossover_rate);

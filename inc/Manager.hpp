@@ -173,7 +173,7 @@ public:
 			}
 			else {
 				// Clone
-				population[selected_chromosome].clone(new_population);
+				population[selected_chromosome].clonning(new_population);
 			}
 
 			// Mutate the chromosome
@@ -262,6 +262,10 @@ public:
 	 */
 	void initPopulation() {
 		Chromosome<unsigned int >::initPopulation(this->population, this->population_size, this->chromosome_size);
+	}
+
+	std::vector<Chromosome<T > > getPopulation() {
+		return this->population;
 	}
 
 private:
