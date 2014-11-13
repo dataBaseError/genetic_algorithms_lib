@@ -168,6 +168,10 @@ public:
 
 				population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
 
+				//TODO fix, crossover can make so that the population contains 1 extra member (since it adds two)
+				// What do we do to prevent this?
+					// - Not allow crossover when we have size-1
+					// - Allow crossover but reject one of the two results of the crossover
 				// Mutate the second chromosome in the crossover
 				mutate((*(new_population.end() - 2)));
 			}

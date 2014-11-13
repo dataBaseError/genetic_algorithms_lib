@@ -194,6 +194,20 @@ void testSelection_uint() {
 
 	manager.initPopulation();
 
+	std::cout << "Init the chromosomes" << std::endl;
+
+	std::vector<Chromosome<unsigned int > > init_pop = manager.getPopulation();
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << init_pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
+
 	manager.breed(fitness);
 
 	std::cout << "Breed the chromosomes" << std::endl;
