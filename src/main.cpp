@@ -5,6 +5,7 @@
 #include <vector>       // std::vector
 #include <time.h>
 #include <stdlib.h>
+#include <cmath>
 
 #include "Chromosome.hpp"
 #include "Manager.hpp"
@@ -20,6 +21,7 @@ bool testChromosomeCreation() {
 	std::cout << "Passed" << std::endl;
 	return true;
 }*/
+double calculate(Chromosome<unsigned int > chromosome);
 
 /**
  * Test create chromosome of type int
@@ -88,10 +90,6 @@ void testChromosomeCreation_uint() {
 	}
 	std::cout << '\n';
 
-	// Check that the crossover2 is equal to the parent
-	assert(chromosome != children[3]);
-	std::cout << "Passed parent not equal to crossover2" << std::endl;
-
 	for (unsigned int i = 0; i < 8; i++) {
 		std::cout << children[3][i];
 		if(i +1 < 8) {
@@ -99,6 +97,9 @@ void testChromosomeCreation_uint() {
 		}
 	}
 	std::cout << '\n';
+	// Check that the crossover2 is equal to the parent
+	assert(chromosome != children[3]);
+	std::cout << "Passed parent not equal to crossover2" << std::endl;
 
 	unsigned int pop_size = 10;
 	std::vector<Chromosome<int > > population;
@@ -224,7 +225,8 @@ void testSelection_uint() {
 
 	}
 
-	std::vector<unsigned int > regTwo = {2,3,4,5,6,7,8,9};
+	std::vector<unsigned int > regTwo = {0,2,4,6,1,3,5,7}; // Not solution
+	// solution {7,3,0,2,5,1,6,4};
 	std::vector<unsigned int > regOne = {10,11,12,13,14,15,16,17};
 	Chromosome<unsigned int > first(regOne);
 	Chromosome<unsigned int > second(regTwo);
@@ -261,6 +263,8 @@ void testSelection_uint() {
 		std::cout << '\n';
 
 	}
+
+	std::cout << "Fitness for regTwo = " << calculate(regTwo) << std::endl;
 }
 
 void testManager_uint() {
@@ -284,7 +288,53 @@ void testManager_uint() {
 
 	//TODO test Manager::run after calling for a single generation
 
-	 //manager.run();
+	manager.run(&calculate);
+}
+
+double calculate(Chromosome<unsigned int > chromosome)
+{
+	/* Mapping of each chromosome to the total number of collisions */
+	//HashMap<Chromosome, Integer> collisions = new HashMap<Chromosome, Integer>(chromosomes.size());
+	//HashMap<Chromosome, Double> fitness = new HashMap<Chromosome, Double>(chromosomes.size());
+	unsigned int numCollisions = 0;
+
+
+	//int numCollisions = 0;
+
+	/* For each queen calculate the number of vertical and horizontal collisions
+	 * that occur respectively for each queen.
+	 *
+	 * TODO: Could use DP to solve this instead of duplicated collisions...
+	 */
+	for (int i = 0; i < chromosome.size(); ++i)
+	{
+		/* Wrap around the genes in the chromosome to check each one */
+		for (int j = (i + 1) % chromosome.size(); j != i; ++j, j %= chromosome.size())
+		{
+			/* Check for vertical collision */
+			if (chromosome[i] == chromosome[j])
+			{
+				++numCollisions;
+			}
+
+			/* Check for diagnoal collision, they have a collision if their slope is 1 */
+			int Yi = chromosome[i];
+			int Yj = chromosome[j];
+
+			if (fabs((double) (i - j) / (Yi - Yj)) == 1.0)
+			{
+				++numCollisions;
+			}
+		}
+	}
+
+	/* Return the base case of 1, to prevent divide by zero if NO collisions occur */
+	if (numCollisions == 0)
+	{
+		numCollisions= 1;
+	}
+
+	return 1.0 / numCollisions;
 }
 
 int main(int argc, char **argv) {
@@ -301,7 +351,7 @@ int main(int argc, char **argv) {
 
 	std::cout << std::endl;
 
-	testManager_uint();
+	//testManager_uint();
 
 	return 0;
 }

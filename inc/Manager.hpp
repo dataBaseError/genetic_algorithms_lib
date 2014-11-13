@@ -269,6 +269,11 @@ public:
 		Chromosome<unsigned int >::initPopulation(this->population, this->population_size, this->chromosome_size);
 	}
 
+	//TODO document
+	unsigned int size() {
+		return this->population_size;
+	}
+
 	std::vector<Chromosome<T > > getPopulation() {
 		return this->population;
 	}
@@ -361,13 +366,13 @@ private:
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
-		std::map<unsigned int, double > fitness_results;
+		std::vector<std::pair<unsigned int, double > >fitness_results;
 		std::pair<unsigned int, double > result;
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
 		while(fitness_results.size() < population_size) {
 			result = result_queue.waitToPop();
-			fitness_results[result.first] = result.second;
+			fitness_results.push_back(result);
 		}
 
 		// TODO search for results
