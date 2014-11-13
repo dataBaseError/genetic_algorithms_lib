@@ -124,7 +124,7 @@ public:
     	other.clonning(children);
 
     	// Randomly pick one point (where the cross over starts)
-    	int crossover_index = getRandomElement(7);
+    	int crossover_index = getRandomElement(0);
 
     	// Using the index inclusive approach
     	// First gets l1 + r2 and second gets l2 + r1
@@ -154,6 +154,14 @@ public:
     T operator[](unsigned int n) const {
     	return *this->chromosome[n];
     }
+
+    /**
+     * Get the size of the chromosome
+     * @return
+     */
+	unsigned int size() {
+		return this->chromosome.size();
+	}
 
     /**
      * Overload the array operator
