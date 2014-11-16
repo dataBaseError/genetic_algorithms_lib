@@ -20,6 +20,7 @@ private:
 	std::queue<T > values;
 	pthread_mutex_t access_lock;
 	sem_t access_resource;
+	bool stop_waiting;
 	//pthread_cond_t empty_wait;
 
 public:
@@ -27,6 +28,7 @@ public:
 	SafeQueue() {
 		pthread_mutex_init(&access_lock, NULL);
 		sem_init(&access_resource, 0, 0);
+		stop_waiting = false;
 		//pthread_cond_init(&empty_wait, 0);
 		//pthread_cond_signal(&self_adapt_wait);
 	}
@@ -55,6 +57,9 @@ public:
 	T waitToPop() {
 
 		sem_wait(&access_resource);
+		if(stop_waiting) {
+			return T ();
+		}
 		//TODO add in exit conidtion
 		return pop();
 	}
@@ -75,6 +80,15 @@ public:
 
 		// Identify that more jobs are available
 		sem_post(&access_resource);
+	}
+
+	void finish(unsigned int wait_count) {
+		this->stop_waiting = true;
+
+		for(unsigned int i = 0; i < wait_count; i++) {
+			sem_post(&access_resource);
+		}
+
 	}
 
 };

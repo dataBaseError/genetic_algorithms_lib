@@ -131,14 +131,12 @@ void testSelection_uint() {
 	unsigned int max_value = 7;
 
 	unsigned int max_gen = 100;
-	bool use_self_adaptive = true;
+	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
 	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 	//double clonning_rate = 0.5;
-
-
 
 	// Create a test population of 10
 	std::vector<Chromosome<unsigned int > > pop(pop_size);
@@ -225,7 +223,7 @@ void testSelection_uint() {
 
 	}
 
-	std::vector<unsigned int > regTwo = {0,2,4,6,1,3,5,7}; // Not solution
+	std::vector<unsigned int > regTwo = {0,2,4,6,1,3,5,7}; // Not solution (1 collisions)
 	// solution {7,3,0,2,5,1,6,4};
 	std::vector<unsigned int > regOne = {10,11,12,13,14,15,16,17};
 	Chromosome<unsigned int > first(regOne);
@@ -275,7 +273,7 @@ void testManager_uint() {
 	unsigned int max_value = 7;
 
 	unsigned int max_gen = 1;
-	bool use_self_adaptive = true;
+	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
 	double similarity_index = 0.1;
@@ -286,26 +284,43 @@ void testManager_uint() {
 				mutation_rate, mutation_change_rate, similarity_index,
 				crossover_rate);
 
-	//TODO test Manager::run after calling for a single generation
+	manager.initPopulation();
 
+	std::cout << "Initial Population " << std::endl;
+	std::vector<Chromosome<unsigned int > > initial_pop = manager.getPopulation();
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << initial_pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
+
+	//test Manager::run after calling for a single generation
 	manager.run(&calculate);
+
+	std::cout << "Result Population: " << std::endl;
+	std::vector<Chromosome<unsigned int > > final_pop = manager.getPopulation();
+	for (unsigned int i = 0; i < pop_size; i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << final_pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}
 }
 
 double calculate(Chromosome<unsigned int > chromosome)
 {
-	/* Mapping of each chromosome to the total number of collisions */
-	//HashMap<Chromosome, Integer> collisions = new HashMap<Chromosome, Integer>(chromosomes.size());
-	//HashMap<Chromosome, Double> fitness = new HashMap<Chromosome, Double>(chromosomes.size());
 	unsigned int numCollisions = 0;
 
-
 	//int numCollisions = 0;
-
-	/* For each queen calculate the number of vertical and horizontal collisions
-	 * that occur respectively for each queen.
-	 *
-	 * TODO: Could use DP to solve this instead of duplicated collisions...
-	 */
 	for (int i = 0; i < chromosome.size(); ++i)
 	{
 		/* Wrap around the genes in the chromosome to check each one */
@@ -334,6 +349,9 @@ double calculate(Chromosome<unsigned int > chromosome)
 		numCollisions= 1;
 	}
 
+	// TODO search for results
+	// This might be best done in a
+
 	return 1.0 / numCollisions;
 }
 
@@ -351,7 +369,7 @@ int main(int argc, char **argv) {
 
 	std::cout << std::endl;
 
-	//testManager_uint();
+	testManager_uint();
 
 	return 0;
 }

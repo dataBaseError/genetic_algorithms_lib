@@ -28,9 +28,6 @@ protected:
 	double mutation_change_rate;
 	double similarity_index;
 
-	// TODO check if clonning rate is by convention (1 - (mutation_rate + crossover)).
-	//double clonning_rate;
-
 	double crossover_rate;
 
 	std::vector<Chromosome<T > > population;
@@ -39,7 +36,6 @@ protected:
 	std::vector<Chromosome<T > > solutions;
 
 	RouletteWheel rw;
-	//RouletteWheel op_roulettewheel;
 
 	SafeQueue<unsigned int > safe_queue;
 	SafeQueue<std::pair<unsigned int, double > > result_queue;
@@ -58,6 +54,7 @@ protected:
 	// Library flags
 	int number_of_nodes = 0;
 	int number_of_threads = 5;
+	bool finished = false;
 
 	// Fitness function
 	double (*fitness_function)(Chromosome<T >);
@@ -87,7 +84,7 @@ public:
 	 * @param clonning_rate The clonning rate, the likelihood that a cromosome will be
 	 * cloned into the new population.
 	 */
-	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generations_number,
+	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
 			T max_chromosome_value, T min_chromosome_value, bool use_self_adaptive,
 			double mutation_rate, double mutation_change_rate, double similarity_index,
 			double crossover_rate) : population_size(population_size),
@@ -127,8 +124,17 @@ public:
 	}
 
 	~Manager() {
-		pthread_mutex_destroy(&self_adapt_lock);
-		pthread_cond_destroy(&self_adapt_wait);
+
+		if(this->use_self_adaptive) {
+			pthread_mutex_lock(&self_adapt_lock);
+			pthread_cond_signal(&self_adapt_wait);
+			pthread_mutex_unlock(&self_adapt_lock);
+
+			pthread_mutex_destroy(&self_adapt_lock);
+			pthread_cond_destroy(&self_adapt_wait);
+		}
+		finished = true;
+		safe_queue.finish(threadpool.size());
 	}
 
         /**
@@ -218,8 +224,8 @@ public:
 	}
 
 	/**
-	 * TODO document
-	 * @param param
+	 * Apply the self adpative function.
+	 * @param param The manager class.
 	 */
 	static void *applySelfAdaptive(void *param) {
 		if(param != NULL) {
@@ -229,25 +235,32 @@ public:
 				pthread_cond_wait(&m->self_adapt_wait, &m->self_adapt_lock);
 				pthread_mutex_unlock(&m->self_adapt_lock);
 
+				if(m->finished) {
+					break;
+				}
+
 				m->selfAdapt();
 
 				// proceed with calculating some fitness functions
 			}
 			
 		}
-		// TODO Deallocate m
 		return NULL;
 	}
 
 	/**
-	 * TODO document
-	 * @param param
+	 * Get another chromosome and apply the fitness function.
+	 * @param param The manager the thread is running for.
 	 */
 	static void *calcFitnessFunction(void *param) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
 			while(true) {
 				unsigned int problem_index = m->safe_queue.waitToPop();
+
+				if(m->finished || m->population.size() < 1) {
+					break;
+				}
 
 				// Can we trust the user to not change the chromosome? No.
 				Chromosome<T > t = m->population[problem_index];
@@ -256,7 +269,6 @@ public:
 			}
 
 		}
-		// TODO Deallocate m
 
 		return NULL;
 	}
@@ -281,7 +293,7 @@ public:
 private:
 
 	/**
-	 * TODO document
+	 * Setup the necessary variables for genetic algorithm.
 	 */
 	void initialize() {
 		// Create the random objects that will be used
@@ -312,8 +324,8 @@ private:
 	}
 
 	/**
-	 * TODO document
-	 * @param chromosome
+	 * Mutate the given chromosome on the likelihood of the mutation rate.
+	 * @param chromosome The chromosome to mutate.
 	 */
 	void mutate(Chromosome<T > &chromosome) {
 		if(mutation_dist(rand_engine) <= mutation_rate) {
@@ -321,24 +333,12 @@ private:
 		}
 	}
 
-	/** TODO clean up this documentation
+	/**
 	 * Apply the fitness function to the population. Given the result of the
 	 * fitness function, the next population is bread.
 	 *
 	 * There are several approaches we could take to mapping the number of available threads to the problems:
-	 * 1. Use static division of work. That is to say, divide the work up as evenly as possible ahead of problem solving.
-	 * eg. 1 thread is given pop_size / (available_threads - 1) chromosomes to solve the fitness function for.
-	 * 	- Adv. less communication and no need for a management thread.
-	 * 	- Adv. Easy to implement.
-	 * 	- Dis. if more threads become available become available (most likely case, they finish their set of problems early)
-	 * 	  then they will not be taken advantage of.
-	 * 2. Use dynamic division of work. Assign the threads a work as the become available. This can happen in two ways;
-	 * 2.1 Use static division and then load balance if new threads become available for work (while more work is pending).
-	 * 	- Adv. basically the same as the static except take advantage of available resources
-	 * 	- Dis. Re-balancing will take more communication.
-	 * 	- Dis. Harder to implement (have to create a balancer which will transfer queued problems to the free thread.
-	 * 	- Dis. Requires a managment thread.
-	 * 2.2 Each thread is given a problem to solve and will pull off another problem once it is finished.
+	 * Each thread is given a problem to solve and will pull off another problem once it is finished.
 	 * 	- Adv. Can effectively balance the load
 	 * 	- Adv. Easy to implement (with shared memory which threads have).
 	 * 	- Dis. Requires more communication
@@ -374,8 +374,6 @@ private:
 			result = result_queue.waitToPop();
 			fitness_results.push_back(result);
 		}
-
-		// TODO search for results
 
 		breed(fitness_results);
 	}
