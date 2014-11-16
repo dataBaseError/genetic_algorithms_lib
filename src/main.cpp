@@ -21,7 +21,7 @@ bool testChromosomeCreation() {
 	std::cout << "Passed" << std::endl;
 	return true;
 }*/
-double calculate(Chromosome<unsigned int > chromosome);
+std::pair<double, bool > calculate(Chromosome<unsigned int > chromosome);
 
 /**
  * Test create chromosome of type int
@@ -138,6 +138,8 @@ void testSelection_uint() {
 	double crossover_rate = 0.4;
 	//double clonning_rate = 0.5;
 
+	unsigned int num_threads = 1;
+
 	// Create a test population of 10
 	std::vector<Chromosome<unsigned int > > pop(pop_size);
 
@@ -189,7 +191,7 @@ void testSelection_uint() {
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 					max_value, min_value, use_self_adaptive,
 					mutation_rate, mutation_change_rate, similarity_index,
-					crossover_rate);
+					crossover_rate, num_threads);
 
 	manager.initPopulation();
 
@@ -262,27 +264,29 @@ void testSelection_uint() {
 
 	}
 
-	std::cout << "Fitness for regTwo = " << calculate(regTwo) << std::endl;
+	//std::cout << "Fitness for regTwo = " << calculate(regTwo) << std::endl;
 }
 
 void testManager_uint() {
 
-	unsigned int pop_size = 10;
+	unsigned int pop_size = 50;
 	unsigned int chromo_size = 8;
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 1;
+	unsigned int max_gen = 100;
 	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
 	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 
+	unsigned int num_threads = 10;
+
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 				max_value, min_value, use_self_adaptive,
 				mutation_rate, mutation_change_rate, similarity_index,
-				crossover_rate);
+				crossover_rate, num_threads);
 
 	manager.initPopulation();
 
@@ -316,7 +320,7 @@ void testManager_uint() {
 	}
 }
 
-double calculate(Chromosome<unsigned int > chromosome)
+std::pair<double, bool > calculate(Chromosome<unsigned int > chromosome)
 {
 	unsigned int numCollisions = 0;
 
@@ -351,8 +355,9 @@ double calculate(Chromosome<unsigned int > chromosome)
 
 	// TODO search for results
 	// This might be best done in a
+	double result = 1.0 / numCollisions;
 
-	return 1.0 / numCollisions;
+	return std::pair<double, bool >(result, result == 1);
 }
 
 int main(int argc, char **argv) {
