@@ -22,9 +22,19 @@
 *.x86_64
 *.hex
 
+
 # Eclipse debug folder
 Debug
+Release
+Build
+Bin
+bin
+build
 
 # Eclipse project files
 .cproject
 .project
+
+# Misc
+*~
+*.swp
