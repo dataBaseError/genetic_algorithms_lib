@@ -16,9 +16,9 @@ protected:
 
     // random number generator values.
     static std::mt19937 random_engine;
-    static std::uniform_int_distribution<int > rand_chrom_elem;
+    static std::uniform_int_distribution<int> rand_chrom_elem;
     // This only works with integer values
-    static std::uniform_int_distribution<int > rand_value;
+    static std::uniform_int_distribution<int> rand_value;
 
 
 public:
@@ -42,10 +42,10 @@ public:
     }
 
     /**
-     * Create a chromosome of the given size
-     * @param chromosome_size The size of the chromosome.
+     * Create the chromosome from a vector of elements.
+     * @param chromosome the vector of elements that make up the chromosome.
      */
-    Chromosome(std::vector<T > chromosome) {
+    Chromosome(std::vector<T> chromosome) {
     	this->chromosome = chromosome;
     }
 
@@ -61,7 +61,7 @@ public:
     		unsigned int population_size, unsigned int chromosome_size) {
     	population.clear();
     	for(unsigned int i = 0; i < population_size; i++) {
-    		Chromosome<T > chrom (chromosome_size);
+    		Chromosome<T> chrom(chromosome_size);
     		chrom.randChromosome();
     		population.push_back(chrom);
     	}
@@ -77,9 +77,9 @@ public:
 
 		// Set up the random number generator engines.
 		std::random_device rd;
-		random_engine = std::mt19937 (rd());
-		rand_chrom_elem = std::uniform_int_distribution<int> (MINIMUM_NUMBER, chromosome_size - 1);
-		rand_value = std::uniform_int_distribution<int > (min_chromosome_value, max_chromosome_value);
+		random_engine = std::mt19937(rd());
+		rand_chrom_elem = std::uniform_int_distribution<int>(MINIMUM_NUMBER, chromosome_size - 1);
+		rand_value = std::uniform_int_distribution<int>(min_chromosome_value, max_chromosome_value);
     }
 
     /**
@@ -87,7 +87,7 @@ public:
      * @param children The next generation of chromosomes (the next population) that is currently being bread.
      */
     void mutate() {
-    	//clonning(children);
+    	//cloning(children);
 
     	// Identify element that will be changed
     	unsigned int mutated_index = getRandomElement();
@@ -99,11 +99,12 @@ public:
     /**
      * Apply the crossover operation to the chromosome and the other chromosome provided.
      * This will produce two offspring that are placed in the next generation.
-     * *Note, Assumed that the two chromosomes (this and other) are of the same length.
+     * Note: It is assumed that the two chromosomes (this and other) are of the same length.
+     *
      * @param other The second chromosome involved in the crossover operation
      * @param children The next generation of the population.
      * 
-     * Note that there are two possible methods to apply this crossover: index inclusive and index exclusive.
+     * Note: that there are two possible methods to apply this crossover: index inclusive and index exclusive.
      * Currently index inclusive is used, this is where the site where the chromosomes are crossed over is
      * included in the crossover. Exclusive is the opposite where the index where the chromosomes are
      * crossed over is not included in the crossover.
@@ -117,11 +118,11 @@ public:
      * Where l1 and l2 are subsets of the chromosome = chromosome[0..crossover_site-1] for each respective chromosome
      * and r1 and r2 are subsets of the chromosome = chromosome[crossover_site..chromosome.size()-1] for each respective chromosome.
      */
-    void crossover(Chromosome<T > &other, std::vector<Chromosome<T > > &children) {
+    void crossover(Chromosome<T> &other, std::vector<Chromosome<T> > &children) {
     	// Copy value to the next population
-    	clonning(children);
+        cloning(children);
     	// Copy other to the next population
-    	other.clonning(children);
+        other.cloning(children);
 
     	// Randomly pick one point (where the cross over starts)
     	int crossover_index = getRandomElement(0);
@@ -134,14 +135,13 @@ public:
     	// Alternative exclusive index approach
     	// Note this approach does not work if crossover_index == 7, also this has been adjusted to hopefully work but has not been tested.
     	//std::swap_ranges((*(children.end()-2)).begin(), (*(children.end()-2)).begin()+(chromosome.size()-1-crossover_index)+1, (*(children.end()-1)).rbegin()+(chromosome.size()-1-crossover_index));
-
     }
 
     /**
      * Copy the chromosome to the next generation.
      * @param children The next generation.
      */
-    void clonning(std::vector<Chromosome<T > > &children) {
+    void cloning(std::vector<Chromosome<T> > &children) {
     	// Copy value to the next population
     	children.push_back(*this);
     }
@@ -177,14 +177,14 @@ public:
      * @param other The Chromosome to compare too.
      * @return Whether the two chromosomes are the same.
      */
-    inline bool operator==(const Chromosome<T >& other){ return this->chromosome == other.chromosome; }
+    inline bool operator==(const Chromosome<T>& other){ return this->chromosome == other.chromosome; }
 
     /**
      * Overload the != operation, makes use of == operator overload
      * @param other The chromosome to check equality.
      * @return Whether the two chromosomes are different.
      */
-    inline bool operator!=(const Chromosome<T >& other){ return !(*this == other); }
+    inline bool operator!=(const Chromosome<T>& other){ return !(*this == other); }
 
 private:
 
@@ -215,11 +215,10 @@ private:
 	 * @param mutated_index The index of the element within the chromosome that will be mutated.
 	 */
     void mutateElement(unsigned int mutated_index) {
-
-	// Could check if it is none primitive and call an expected function
-	// Aka all 'data' types that are passed (that are not bool or int) are a child of a abstract class Gene
-	// This will define a abstract accessor methods static method Gene::randomElement(Gene)
-	// And potential other types of data members.
+        // Could check if it is none primitive and call an expected function
+        // Aka all 'data' types that are passed (that are not bool or int) are a child of a abstract class Gene
+        // This will define a abstract accessor methods static method Gene::randomElement(Gene)
+        // And potential other types of data members.
     	// Apply mutation operation to the chromosome
     	if(std::is_same<T, bool>::value) {
     		// Flip the bit

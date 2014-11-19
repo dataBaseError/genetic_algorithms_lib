@@ -8,7 +8,7 @@ const int min_chromosome_value = 0;
 const double mutation_rate_initial = 0.1;
 
 const double crossover_rate = 0.7;
-const double clonning_rate = 0.3;
+const double cloning_rate = 0.3;
 
 const double mutation_change_threshold = 1.0;
 const double similarity_index = 0.15;

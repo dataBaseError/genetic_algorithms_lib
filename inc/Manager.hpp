@@ -30,17 +30,17 @@ protected:
 
 	double crossover_rate;
 
-	std::vector<Chromosome<T > > population;
+	std::vector<Chromosome<T> > population;
 
 	// Need to have some way of ensure no duplication of solutions
-	std::vector<Chromosome<T > > solutions;
+	std::vector<Chromosome<T> > solutions;
 
 	RouletteWheel rw;
 
-	SafeQueue<unsigned int > safe_queue;
-	SafeQueue<std::pair<unsigned int, std::pair<double, bool > > > result_queue;
+	SafeQueue<unsigned int> safe_queue;
+	SafeQueue<std::pair<unsigned int, std::pair<double, bool> > > result_queue;
 
-	std::vector<pthread_t > threadpool;
+	std::vector<pthread_t> threadpool;
 
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<float> op_dist;
@@ -56,13 +56,14 @@ protected:
 	bool finished = false;
 
 	// Fitness function
-	std::pair<double, bool > (*fitness_function)(Chromosome<T >);
+	std::pair<double, bool> (*fitness_function)(Chromosome<T>);
 
 public:
 	pthread_mutex_t self_adapt_lock;
 	pthread_cond_t self_adapt_wait;
 
 
+    // TODO this should take a configuration struct/object that has a lot of default parameters
 	/**
 	 * Create a manager for GA.
 	 * @param population_size The size of population.
@@ -80,7 +81,7 @@ public:
 	 * updated.
 	 * @param crossover_rate The crossover rate, the likelihood that a chromosome
 	 * has the crossover operation applied to it.
-	 * @param clonning_rate The clonning rate, the likelihood that a cromosome will be
+	 * @param cloning_rate The cloning rate, the likelihood that a cromosome will be
 	 * cloned into the new population.
 	 */
 	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
@@ -96,6 +97,7 @@ public:
 		initialize();
 	}
 
+    // TODO this should take a configuration struct/object that has a lot of default parameters
 	/**
 	 * Create a non self-adaptive GA manager
 	 * @param population_size The size of population.
@@ -107,7 +109,7 @@ public:
 	 * the initial mutation rate.
 	 * @param crossover_rate The crossover rate, the likelihood that a chromosome
 	 * has the crossover operation applied to it.
-	 * @param clonning_rate The clonning rate, the likelihood that a cromosome will be
+	 * @param cloning_rate The cloning rate, the likelihood that a cromosome will be
 	 * cloned into the new population.
 	 */
 	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
@@ -133,14 +135,15 @@ public:
 			pthread_mutex_destroy(&self_adapt_lock);
 			pthread_cond_destroy(&self_adapt_wait);
 		}
+        // TODO if object no longer exists what does finished do?
 		finished = true;
 		safe_queue.finish(threadpool.size());
 	}
 
-        /**
+    /**
 	 * Run the algorithm for the specificed number of generations
 	 */	
-	void run(std::pair<double, bool > (*fitness_function)(Chromosome<T >)) {
+	void run(std::pair<double, bool> (*fitness_function)(Chromosome<T>)) {
 		this->fitness_function = fitness_function;
 
 		initPopulation();
@@ -150,11 +153,12 @@ public:
 		}
 	}
 
-	/** TODO make this private (after testing)
+    // TODO make this private (after testing)
+	/**
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
-	void breed(std::vector<std::pair<unsigned int, double > > &fitness) {
-		std::vector<Chromosome<T > > new_population;
+	void breed(std::vector<std::pair<unsigned int, double> > &fitness) {
+		std::vector<Chromosome<T> > new_population;
 		rw.init(fitness);
 
 		// Iterate through the chromosomes
@@ -167,7 +171,7 @@ public:
 				unsigned int other_selected_chromosome = rw.next();
 
 				// TODO add a attribute to allow the user to decided whether to have redundent crossover
-				// Since a crossover operation between the same chromosome is the same as clonning we should pick another one
+				// Since a crossover operation between the same chromosome is the same as cloning we should pick another one
 				while(other_selected_chromosome == selected_chromosome) {
 					other_selected_chromosome = rw.next();
 				}
@@ -184,7 +188,7 @@ public:
 			}
 			else {
 				// Clone
-				population[selected_chromosome].clonning(new_population);
+                population[selected_chromosome].cloning(new_population);
 			}
 
 			// Mutate the chromosome
@@ -224,7 +228,7 @@ public:
 	}
 
 	/**
-	 * Apply the self adpative function.
+	 * Apply the self adaptive function.
 	 * @param param The manager class.
 	 */
 	static void *applySelfAdaptive(void *param) {
@@ -263,32 +267,38 @@ public:
 				}
 
 				// Can we trust the user to not change the chromosome? No.
-				Chromosome<T > t = m->population[problem_index];
+				Chromosome<T> t = m->population[problem_index];
 
-				std::pair<unsigned int, std::pair<double, bool > >temp (problem_index, m->fitness_function(t));
+				std::pair<unsigned int, std::pair<double, bool> >temp (problem_index, m->fitness_function(t));
 
 				m->result_queue.push(temp);
 			}
-
 		}
 
 		return NULL;
 	}
 
+    // TODO make this private (after testing)
 	/**
-	 * TODO make this private (after testing)
-	 * Create an initial population of random chromosoms.
+	 * Create an initial population of random chromosomes.
 	 */
 	void initPopulation() {
-		Chromosome<unsigned int >::initPopulation(this->population, this->population_size, this->chromosome_size);
+		Chromosome<unsigned int>::initPopulation(this->population, this->population_size, this->chromosome_size);
 	}
 
-	//TODO document
+    /**
+	 * Returns the population size specified for the manager class.
+     * @return The population size
+     */
 	unsigned int size() {
 		return this->population_size;
 	}
 
-	std::vector<Chromosome<T > > getPopulation() {
+    /**
+     * Returns the entire chromosome population.
+     * @return The chromosome population
+     */
+	std::vector<Chromosome<T> > getPopulation() {
 		return this->population;
 	}
 
@@ -300,10 +310,10 @@ private:
 	void initialize() {
 		// Create the random objects that will be used
 		std::random_device rd;
-		rand_engine = std::mt19937 (rd());
-		op_dist = std::uniform_real_distribution<float> (0.0, 1.0);
-		mutation_dist = std::uniform_real_distribution<float> (0.0, 1.0);
-		Chromosome<T >::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
+		rand_engine = std::mt19937(rd());
+		op_dist = std::uniform_real_distribution<float>(0.0, 1.0);
+		mutation_dist = std::uniform_real_distribution<float>(0.0, 1.0);
+		Chromosome<T>::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 
 		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
 		for(unsigned int i = 0; i < max_num_threads - use_self_adaptive; i++) {
@@ -337,7 +347,7 @@ private:
 
 	/**
 	 * Apply the fitness function to the population. Given the result of the
-	 * fitness function, the next population is bread.
+	 * fitness function, the next population is bred.
 	 *
 	 * There are several approaches we could take to mapping the number of available threads to the problems:
 	 * Each thread is given a problem to solve and will pull off another problem once it is finished.
@@ -368,15 +378,15 @@ private:
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
-		std::vector<std::pair<unsigned int, double > >fitness_results;
-		std::pair<unsigned int, std::pair<double, bool > > result;
+		std::vector<std::pair<unsigned int, double> >fitness_results;
+		std::pair<unsigned int, std::pair<double, bool> > result;
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
 		while(fitness_results.size() < population_size) {
 			result = result_queue.waitToPop();
 			//TODO add results to solutions.
 
-			fitness_results.push_back(std::pair<unsigned int, double >(result.first, result.second.first));
+			fitness_results.push_back(std::pair<unsigned int, double>(result.first, result.second.first));
 		}
 
 		breed(fitness_results);

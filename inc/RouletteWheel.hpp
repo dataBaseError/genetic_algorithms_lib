@@ -15,7 +15,7 @@ private:
     const double EPSILON = 1.0E-15;
     double left = 0.0;
     double right = 0.0 + EPSILON;
-    std::map<std::pair<double, double>, unsigned int > selection;
+    std::map<std::pair<double, double>, unsigned int> selection;
 
 public:
     /**
