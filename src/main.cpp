@@ -2,6 +2,9 @@
 #include <cassert>
 #include <iostream>     // std::cout
 #include <algorithm>    // std::swap_ranges
+#include <boost/thread/thread.hpp>
+#include <boost/lockfree/queue.hpp>
+#include <boost/atomic.hpp>
 
 #include "Chromosome.hpp"
 #include "Manager.hpp"
@@ -356,7 +359,12 @@ std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome)
 
 int main(int argc, char **argv) {
 
-	//Skip program name if any
+    // EXAMPLES
+    boost::atomic_int producer_count(0);
+    boost::thread t(&testChromosomeCreation_uint);
+    boost::lockfree::queue<int> queue(128);
+
+    //Skip program name if any
 	argc -= (argc > 0);
 	argv += (argc > 0);
 

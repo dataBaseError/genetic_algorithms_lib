@@ -262,7 +262,6 @@ private:
         }
         return val;
     }
-
 };
 
 template<class T>
