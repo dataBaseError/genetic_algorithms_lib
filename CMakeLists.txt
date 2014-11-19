@@ -3,6 +3,11 @@ project(GALibrary)
 
 find_package (Threads)
 
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost COMPONENTS system thread program_options regex REQUIRED)
+
 set (GALibrary_VERSION_MAJOR 0)
 set (GALibrary_VERSION_MINOR 1)
 
@@ -18,7 +23,8 @@ set(SOURCE_FILES
 
 set(HEADER_DIR inc)
 
-include_directories(${HEADER_DIR})
+include_directories(${HEADER_DIR} ${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIR})
 
 set(HEADER_FILES
     ${HEADER_DIR}/Chromosome.hpp
@@ -30,4 +36,4 @@ set(HEADER_FILES
 
 add_executable(GALibrary ${SOURCE_FILES} ${HEADER_FILES})
 
-target_link_libraries (GALibrary ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (GALibrary ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
