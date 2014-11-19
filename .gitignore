@@ -23,7 +23,7 @@
 *.hex
 
 
-# Eclipse debug folder
+# build folder
 Debug
 Release
 Build
@@ -31,9 +31,10 @@ Bin
 bin
 build
 
-# Eclipse project files
+# project files
 .cproject
 .project
+.idea
 
 # Misc
 *~
