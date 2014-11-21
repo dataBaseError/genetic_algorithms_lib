@@ -18,7 +18,7 @@ bool testChromosomeCreation() {
 	std::cout << "Passed" << std::endl;
 	return true;
 }*/
-std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome);
+double calculate(Chromosome<unsigned int> chromosome);
 
 /**
  * Test create chromosome of type int
@@ -127,7 +127,7 @@ void testSelection_uint() {
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 100;
+	unsigned int max_gen = 500;
 	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
@@ -157,18 +157,22 @@ void testSelection_uint() {
 
 	}
 
-	std::vector<std::pair<unsigned int, double> > fitness(pop_size);
+	std::vector<Result > fitness(pop_size);
 
 	// Create a set of fitness values
 	std::vector<double > fitness_values = { 0.1, 0.4, 0.2, 0.6, 0.7, 0.8, 0.5, 0.75, 0.92, 0.8 };
 
 	for(unsigned int i = 0; i < fitness.size(); i++) {
-		fitness[i] = std::pair<unsigned int, double>(i, fitness_values[i]);
+		fitness[i] = Result(i, fitness_values[i]);
 	}
 
 	RouletteWheel rw;
 
-	rw.init(fitness);
+	std::vector<std::pair<unsigned int, double > > list;
+	for(unsigned int i = 0; i < fitness.size(); i ++) {
+		list.push_back(std::pair<unsigned int, double >(fitness[i].index, fitness[i].result));
+	}
+	rw.init(list);
 
 	unsigned int count = 0;
 	while (count < pop_size) {
@@ -317,7 +321,7 @@ void testManager_uint() {
 	}
 }
 
-std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome)
+double calculate(Chromosome<unsigned int> chromosome)
 {
 	unsigned int numCollisions = 0;
 
@@ -354,15 +358,15 @@ std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome)
 	// This might be best done in a
 	double result = 1.0 / numCollisions;
 
-	return std::pair<double, bool >(result, result == 1);
+	return result;//, result == 1);
 }
 
 int main(int argc, char **argv) {
 
     // EXAMPLES
-    boost::atomic_int producer_count(0);
-    boost::thread t(&testChromosomeCreation_uint);
-    boost::lockfree::queue<int> queue(128);
+   // boost::atomic_int producer_count(0);
+    //boost::thread t(&testChromosomeCreation_uint);
+   // boost::lockfree::queue<int> queue(128);
 
     //Skip program name if any
 	argc -= (argc > 0);

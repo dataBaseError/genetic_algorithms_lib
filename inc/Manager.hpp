@@ -2,14 +2,20 @@
 #ifndef MANAGER_HPP_
 #define MANAGER_HPP_
 
+#include <iostream>
+
 #include <vector>			 // vector
 #include <random>            // mt19937, uniform_int_distribution, random_device
-#include <pthread.h>		 // pthreads
+
 #include <utility>			 // make_pair
+
+#include <boost/thread/thread.hpp>
+#include <boost/lockfree/queue.hpp>
+#include <boost/atomic.hpp>
 
 #include "Chromosome.hpp"
 #include "RouletteWheel.hpp"
-#include "SafeQueue.hpp"
+#include "Result.hpp"
 
 template <class T>
 class Manager {
@@ -37,10 +43,12 @@ protected:
 
 	RouletteWheel rw;
 
-	SafeQueue<unsigned int> safe_queue;
-	SafeQueue<std::pair<unsigned int, std::pair<double, bool> > > result_queue;
+	boost::lockfree::queue<unsigned int> safe_queue;
+	boost::lockfree::queue<Result > result_queue;
+	//SafeQueue<unsigned int> safe_queue;
+	//SafeQueue<std::pair<unsigned int, std::pair<double, bool> > > result_queue;
 
-	std::vector<pthread_t> threadpool;
+	boost::thread_group fitness_group;
 
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<float> op_dist;
@@ -53,14 +61,12 @@ protected:
 
 	// Library flags
 	//int number_of_threads = 5;
-	bool finished = false;
+	boost::atomic<bool> done;
 
 	// Fitness function
-	std::pair<double, bool> (*fitness_function)(Chromosome<T>);
+	double (*fitness_function)(Chromosome<T>);
 
 public:
-	pthread_mutex_t self_adapt_lock;
-	pthread_cond_t self_adapt_wait;
 
 
     // TODO this should take a configuration struct/object that has a lot of default parameters
@@ -92,7 +98,8 @@ public:
 			max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
 			use_self_adaptive(use_self_adaptive), mutation_rate(mutation_rate),
 			mutation_change_rate(mutation_change_rate), similarity_index(similarity_index),
-			crossover_rate(crossover_rate), max_num_threads(num_threads) {
+			crossover_rate(crossover_rate), max_num_threads(num_threads), safe_queue(population_size), 
+			result_queue(population_size) {
 		population = std::vector<Chromosome<T > >(population_size);
 		initialize();
 	}
@@ -127,28 +134,21 @@ public:
 
 	~Manager() {
 
-		if(this->use_self_adaptive) {
-			pthread_mutex_lock(&self_adapt_lock);
-			pthread_cond_signal(&self_adapt_wait);
-			pthread_mutex_unlock(&self_adapt_lock);
-
-			pthread_mutex_destroy(&self_adapt_lock);
-			pthread_cond_destroy(&self_adapt_wait);
-		}
         // TODO if object no longer exists what does finished do?
-		finished = true;
-		safe_queue.finish(threadpool.size());
+		done = true;//finished = true;
+		//safe_queue.finish(threadpool.size());
 	}
 
     /**
 	 * Run the algorithm for the specificed number of generations
 	 */	
-	void run(std::pair<double, bool> (*fitness_function)(Chromosome<T>)) {
+	void run(double (*fitness_function)(Chromosome<T>)) {
 		this->fitness_function = fitness_function;
 
 		initPopulation();
 
 		for(unsigned int i = 0; i < max_generation_number; i++) {
+			std::cout << "Starting Generation " << i << std::endl;
 			runGeneration();
 		}
 	}
@@ -157,9 +157,16 @@ public:
 	/**
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
-	void breed(std::vector<std::pair<unsigned int, double> > &fitness) {
+	void breed(std::vector<Result > &fitness) {
 		std::vector<Chromosome<T> > new_population;
-		rw.init(fitness);
+
+		std::cout << "Breeding" << std::endl;
+
+		std::vector<std::pair<unsigned int, double > > list;
+		for(unsigned int i = 0; i < fitness.size(); i ++) {
+			list.push_back(std::pair<unsigned int, double >(fitness[i].index, fitness[i].result));
+		}
+		rw.init(list);
 
 		// Iterate through the chromosomes
 		while(new_population.size() < population_size) {	
@@ -259,19 +266,19 @@ public:
 	static void *calcFitnessFunction(void *param) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
-			while(true) {
-				unsigned int problem_index = m->safe_queue.waitToPop();
+			unsigned int problem_index;
+			while(!m->done) {
 
-				if(m->finished || m->population.size() < 1) {
-					break;
+				while(m->safe_queue.pop(problem_index)) {
+					//std::cout << "Grabbing a Chromosome " << std::endl;
+					// Can we trust the user to not change the chromosome? No.
+					Chromosome<T> t = m->population[problem_index];
+
+					//std::pair<unsigned int, double >temp (problem_index, m->fitness_function(t));
+
+					m->result_queue.push(Result(problem_index, m->fitness_function(t)));
 				}
-
-				// Can we trust the user to not change the chromosome? No.
-				Chromosome<T> t = m->population[problem_index];
-
-				std::pair<unsigned int, std::pair<double, bool> >temp (problem_index, m->fitness_function(t));
-
-				m->result_queue.push(temp);
+				//std::cout << "Nothing to grab" << std::endl;
 			}
 		}
 
@@ -317,22 +324,24 @@ private:
 
 		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
 		for(unsigned int i = 0; i < max_num_threads - use_self_adaptive; i++) {
-			pthread_t thread;
-			threadpool.push_back(thread);
-			pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
+
+			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
+			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this));
 
 			// TODO decide if this is useful
 			//this->num_threads_used++;
 		}
 
-
+		/*
 		if(use_self_adaptive) {
 			pthread_mutex_init(&self_adapt_lock, 0);
 			pthread_cond_init(&self_adapt_wait, 0);
 
 			pthread_t self_adapt;
 			pthread_create(&self_adapt, 0, applySelfAdaptive, (void *)this);
-		}
+		}*/
+
+		done = false;
 	}
 
 	/**
@@ -363,30 +372,33 @@ private:
 			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
 		for(unsigned int i = 0; i < this->population_size; i++) {
 			// Push on the index for each chromosome in the population.
+			std::cout << "Pushing population value " << i << std::endl;
 			safe_queue.push(i);
 		}
 		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
 			// eg; in N-Queens you can rotate the board in order to find more solutions.
 
 		// Can be done concurrently with the fitness function
-		if(use_self_adaptive) {
+		/*if(use_self_adaptive) {
 				// Create a thread to handle selfAdapt()
 				pthread_mutex_lock(&self_adapt_lock);
 				pthread_cond_signal(&self_adapt_wait);
 				pthread_mutex_unlock(&self_adapt_lock);
-		}
+		}*/
+
+		//fitness_group.join_all();
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
-		std::vector<std::pair<unsigned int, double> >fitness_results;
-		std::pair<unsigned int, std::pair<double, bool> > result;
+		std::vector<Result >fitness_results;
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
+		Result rel;
 		while(fitness_results.size() < population_size) {
-			result = result_queue.waitToPop();
-			//TODO add results to solutions.
-
-			fitness_results.push_back(std::pair<unsigned int, double>(result.first, result.second.first));
+			while(result_queue.pop(rel)) {
+				fitness_results.push_back(rel);
+				//TODO add results to solutions.
+			}
 		}
 
 		breed(fitness_results);
