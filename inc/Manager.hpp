@@ -43,8 +43,8 @@ protected:
 
 	RouletteWheel rw;
 
-	boost::lockfree::queue<unsigned int> safe_queue;
 	boost::lockfree::queue<Result > result_queue;
+	boost::lockfree::queue<unsigned int> safe_queue;
 	//SafeQueue<unsigned int> safe_queue;
 	//SafeQueue<std::pair<unsigned int, std::pair<double, bool> > > result_queue;
 
@@ -56,8 +56,8 @@ protected:
 	//std::uniform_int_distribution<int> chrom_dist;
 
 	// With this we can limit the number of threads used
-	unsigned int max_num_threads;
 	unsigned int num_threads_used;
+	unsigned int max_num_threads;
 
 	// Library flags
 	//int number_of_threads = 5;
@@ -135,7 +135,7 @@ public:
 	~Manager() {
 
         // TODO if object no longer exists what does finished do?
-		done = true;//finished = true;
+		//finished = true;
 		//safe_queue.finish(threadpool.size());
 	}
 
@@ -151,6 +151,7 @@ public:
 			std::cout << "Starting Generation " << i << std::endl;
 			runGeneration();
 		}
+		done = true;
 	}
 
     // TODO make this private (after testing)
@@ -238,7 +239,7 @@ public:
 	 * Apply the self adaptive function.
 	 * @param param The manager class.
 	 */
-	static void *applySelfAdaptive(void *param) {
+	/*static void *applySelfAdaptive(void *param) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
 			while(true) {
@@ -257,7 +258,7 @@ public:
 			
 		}
 		return NULL;
-	}
+	}*/
 
 	/**
 	 * Get another chromosome and apply the fitness function.
@@ -269,7 +270,7 @@ public:
 			unsigned int problem_index;
 			while(!m->done) {
 
-				while(m->safe_queue.pop(problem_index)) {
+				while(!m->safe_queue.empty() && m->safe_queue.pop(problem_index) && problem_index < m->population_size) {
 					//std::cout << "Grabbing a Chromosome " << std::endl;
 					// Can we trust the user to not change the chromosome? No.
 					Chromosome<T> t = m->population[problem_index];
@@ -321,6 +322,7 @@ private:
 		op_dist = std::uniform_real_distribution<float>(0.0, 1.0);
 		mutation_dist = std::uniform_real_distribution<float>(0.0, 1.0);
 		Chromosome<T>::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
+		done = false;
 
 		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
 		for(unsigned int i = 0; i < max_num_threads - use_self_adaptive; i++) {
@@ -340,8 +342,6 @@ private:
 			pthread_t self_adapt;
 			pthread_create(&self_adapt, 0, applySelfAdaptive, (void *)this);
 		}*/
-
-		done = false;
 	}
 
 	/**

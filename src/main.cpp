@@ -127,7 +127,7 @@ void testSelection_uint() {
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 500;
+	unsigned int max_gen = 1000;
 	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
