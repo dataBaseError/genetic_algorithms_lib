@@ -177,6 +177,42 @@ public:
 	}
 
 	/**
+	 * Retrieve all the values within the queue. If no values are within the
+	 * queue the thread will wait until there are some values within the queue.
+	 *
+	 * @param results All the values currently within the queue.
+	 * 
+	 * @return Returns true if values were successfully retrieved and false if
+	 * the queue's finish method has been called.
+	 */
+	bool popAll(std::vector<T > &results, bool wait=true) {
+		boost::unique_lock<boost::mutex> lock(mtx_);
+
+		// Initial design, can deadlock if no more values are added.
+		while (values.size()==0 && !stop_waiting) {
+
+			if(!wait) {
+				// Queue is empty.
+				return false;
+			}
+
+			m_cond.wait(lock);
+		}
+
+		if(stop_waiting) {
+			return false;
+		}
+
+		// pop off all the available values within the queue.
+		while(values.size() != 0) {
+
+			results.push_back(values.front());
+			values.pop();
+		}
+		return true;
+	}
+
+	/**
 	 * Simple push of a single value into the queue.
 	 *
 	 * @param The value to add to the queue.
