@@ -17,6 +17,8 @@
 #include "RouletteWheel.hpp"
 #include "Result.hpp"
 
+#include "SafeQueue.hpp"
+
 template <class T>
 class Manager {
 protected:
@@ -43,10 +45,10 @@ protected:
 
 	RouletteWheel rw;
 
-	boost::lockfree::queue<Result > result_queue;
-	boost::lockfree::queue<unsigned int> safe_queue;
-	//SafeQueue<unsigned int> safe_queue;
-	//SafeQueue<std::pair<unsigned int, std::pair<double, bool> > > result_queue;
+	//boost::lockfree::queue<Result > result_queue;
+	//boost::lockfree::queue<unsigned int> safe_queue;
+	SafeQueue<unsigned int> safe_queue;
+	SafeQueue<Result > result_queue;
 
 	boost::thread_group fitness_group;
 
@@ -98,8 +100,9 @@ public:
 			max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
 			use_self_adaptive(use_self_adaptive), mutation_rate(mutation_rate),
 			mutation_change_rate(mutation_change_rate), similarity_index(similarity_index),
-			crossover_rate(crossover_rate), max_num_threads(num_threads), safe_queue(population_size), 
-			result_queue(population_size) {
+			crossover_rate(crossover_rate), max_num_threads(num_threads)//, safe_queue(population_size), 
+			//result_queue(population_size)
+			{
 		population = std::vector<Chromosome<T > >(population_size);
 		initialize();
 	}
@@ -148,10 +151,16 @@ public:
 		initPopulation();
 
 		for(unsigned int i = 0; i < max_generation_number; i++) {
-			std::cout << "Starting Generation " << i << std::endl;
+			//std::cout << "Starting Generation " << i << std::endl;
 			runGeneration();
 		}
+
 		done = true;
+
+		safe_queue.finish();
+		
+		//result_queue.finish();
+		
 	}
 
     // TODO make this private (after testing)
@@ -161,7 +170,7 @@ public:
 	void breed(std::vector<Result > &fitness) {
 		std::vector<Chromosome<T> > new_population;
 
-		std::cout << "Breeding" << std::endl;
+		//std::cout << "Breeding" << std::endl;
 
 		std::vector<std::pair<unsigned int, double > > list;
 		for(unsigned int i = 0; i < fitness.size(); i ++) {
@@ -264,26 +273,38 @@ public:
 	 * Get another chromosome and apply the fitness function.
 	 * @param param The manager the thread is running for.
 	 */
-	static void *calcFitnessFunction(void *param) {
+	static void calcFitnessFunction(void *param, unsigned int problem_size) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
 			unsigned int problem_index;
+
+			std::vector<unsigned int > indexes;
+			std::vector<Result > results;
 			while(!m->done) {
 
-				while(!m->safe_queue.empty() && m->safe_queue.pop(problem_index) && problem_index < m->population_size) {
+				//bool value = ;
+				if(m->safe_queue.pop(problem_size, indexes)) {
 					//std::cout << "Grabbing a Chromosome " << std::endl;
 					// Can we trust the user to not change the chromosome? No.
-					Chromosome<T> t = m->population[problem_index];
+
+					for(unsigned int i = 0; i < indexes.size(); i++) {
+						// TODO loop through the grabbed indexes and apply them
+						Chromosome<T> t = m->population[indexes[i]];
+
+						results.push_back(Result(problem_index, m->fitness_function(t)));
+					}
 
 					//std::pair<unsigned int, double >temp (problem_index, m->fitness_function(t));
+					//Result r = Result(problem_index, m->fitness_function(t));
+					m->result_queue.push(results);
 
-					m->result_queue.push(Result(problem_index, m->fitness_function(t)));
+					// Store them in results;
 				}
-				//std::cout << "Nothing to grab" << std::endl;
+
+				indexes.clear();
+				results.clear();
 			}
 		}
-
-		return NULL;
 	}
 
     // TODO make this private (after testing)
@@ -324,11 +345,13 @@ private:
 		Chromosome<T>::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 		done = false;
 
+		int problem_size = population_size/max_num_threads;
+
 		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
-		for(unsigned int i = 0; i < max_num_threads - use_self_adaptive; i++) {
+		for(unsigned int i = 0; i < max_num_threads; i++) {
 
 			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
-			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this));
+			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this, problem_size));
 
 			// TODO decide if this is useful
 			//this->num_threads_used++;
@@ -372,7 +395,7 @@ private:
 			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
 		for(unsigned int i = 0; i < this->population_size; i++) {
 			// Push on the index for each chromosome in the population.
-			std::cout << "Pushing population value " << i << std::endl;
+			//std::cout << "Pushing population value " << i << std::endl;
 			safe_queue.push(i);
 		}
 		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
@@ -394,14 +417,17 @@ private:
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
 		Result rel;
+		//std::cout << "Waiting" << std::endl;
 		while(fitness_results.size() < population_size) {
-			while(result_queue.pop(rel)) {
+			while(result_queue.pop(rel, false)) {
 				fitness_results.push_back(rel);
+				//std::cout << "Pushed another one" << std::endl;
 				//TODO add results to solutions.
 			}
 		}
+		//std::cout << "done" << std::endl;
 
-		breed(fitness_results);
+		//breed(fitness_results);//*/
 	}
 };
 

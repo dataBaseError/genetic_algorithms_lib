@@ -275,14 +275,14 @@ void testManager_uint() {
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 100;
+	unsigned int max_gen = 1000;
 	bool use_self_adaptive = false;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
 	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 
-	unsigned int num_threads = 10;
+	unsigned int num_threads = 5;
 
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 				max_value, min_value, use_self_adaptive,
@@ -372,13 +372,13 @@ int main(int argc, char **argv) {
 	argc -= (argc > 0);
 	argv += (argc > 0);
 
-	testChromosomeCreation_uint();
+	//testChromosomeCreation_uint();
 
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
-	testSelection_uint();
+	//testSelection_uint();
 
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
 	testManager_uint();
 
