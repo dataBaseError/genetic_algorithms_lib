@@ -13,6 +13,9 @@ RouletteWheel::~RouletteWheel() {
 
 void RouletteWheel::init(std::vector<Result > &fitness)
 {
+	// Ensure the selection map is empty.
+	selection.clear();
+
 	double lower = this->left;
 	double upper = this->right;
 
