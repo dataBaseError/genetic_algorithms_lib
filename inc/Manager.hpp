@@ -157,11 +157,6 @@ public:
 		done = true;
 		m_cond.notify_all();
 
-
-		//TODO remove
-		//safe_queue.finish();
-		//result_queue.finish();
-
 		fitness_group.join_all();
 		
 	}
@@ -170,34 +165,36 @@ public:
 	 * Get another chromosome and apply the fitness function.
 	 * @param param The manager the thread is running for.
 	 */
-	static void calcFitnessFunction(void *param, unsigned int start_index, unsigned int problem_size) {
-		if(param != NULL) {
-			Manager * m = (Manager *) param;
-			unsigned int problem_index;
+	static void calcFitnessFunction(Manager *m, unsigned int start_index, unsigned int problem_size) {
 
-			std::vector<Result > results;
-			while(!m->done) {
+		unsigned int problem_index;
 
-				if(m->wait_for_work()) {
-					break;
-				}
+		std::vector<Result > results;
+		while(!m->done) {
 
-				// Can we trust the user to not change the chromosome? No.
-				for(unsigned int i = 0; i < problem_size; i++) {
-
-					Chromosome<T> t = m->population[start_index+i];
-
-					results.push_back(Result(start_index+i, m->fitness_function(t)));
-				}
-
-				// Store them in results
-				m->result_queue.push(results);
-
-				results.clear();
-
-				//TODO consider a barrier to make all the threads wait until all other threads are complete and then apply breeding in the threads.
+			if(m->wait_for_work()) {
+				break;
 			}
+
+			// Can we trust the user to not change the chromosome? No.
+			for(unsigned int i = 0; i < problem_size; i++) {
+
+				Chromosome<T> t = m->population[start_index+i];
+
+				results.push_back(Result(start_index+i, m->fitness_function(t)));
+			}
+
+			// Store them in results
+			m->result_queue.push(results);
+
+			results.clear();
+
+			//TODO consider a barrier to make all the threads wait until all other threads are complete and then apply breeding in the threads.
 		}
+	}
+
+	std::vector<Chromosome<T > > getSolutions() {
+		return this->solutions;
 	}
 
     // TODO make this private (after testing)
@@ -271,7 +268,7 @@ private:
 			}
 
 			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
-			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this, count, problem_size));
+			fitness_group.create_thread(boost::bind(calcFitnessFunction, this, count, problem_size));
 			count+= problem_size;
 		}
 	}
@@ -306,9 +303,14 @@ private:
 
 				for(unsigned int i = 0; i < results.size(); i++) {
 					fitness_results.push_back(results[i]);
+
+					//TODO add results to solutions.
+					if(results[i].getResult() == 1.0) {
+						solutions.push_back(population[results[i].getIndex()]);
+					}
 				}
 				results.clear();
-				//TODO add results to solutions.
+				
 			}
 		}
 
