@@ -179,29 +179,31 @@ public:
 		std::vector<Chromosome<T> > new_population;
 
 		//std::cout << "Breeding" << std::endl;
-
-		std::vector<std::pair<unsigned int, double > > list;
-		for(unsigned int i = 0; i < fitness.size(); i ++) {
-			list.push_back(std::pair<unsigned int, double >(fitness[i].index, fitness[i].result));
-		}
-		rw.init(list);
+		rw.init(fitness);
 
 		// Iterate through the chromosomes
-		while(new_population.size() < population_size) {	
+		while(new_population.size() < population_size) {
 			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
 			float selected_operation = op_dist(rand_engine);
 			unsigned int selected_chromosome = rw.next();
+
+			
 			if(selected_operation <= crossover_rate) {
 				// Crossover
 				unsigned int other_selected_chromosome = rw.next();
 
-				// TODO add a attribute to allow the user to decided whether to have redundent crossover
-				// Since a crossover operation between the same chromosome is the same as cloning we should pick another one
-				while(other_selected_chromosome == selected_chromosome) {
+				// This was the cause of the slow down!
+				/*while(other_selected_chromosome == selected_chromosome) {
 					other_selected_chromosome = rw.next();
-				}
+				}*/
 
-				population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
+				// If the chromosome selected are the same than there is no point apply the crossover.
+				if(other_selected_chromosome != selected_chromosome) {
+					population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
+				} else {
+					population[selected_chromosome].cloning(new_population);
+					population[other_selected_chromosome].cloning(new_population);
+				}
 
 				// Mutate the second chromosome in the crossover
 				mutate((*(new_population.end() - 2)));
@@ -218,6 +220,7 @@ public:
 
 			// Mutate the chromosome
 			mutate(new_population.back());
+
 		}
 
 		// Update the population to the new population
@@ -437,8 +440,8 @@ private:
 		/*for(unsigned int i = 0; i < this->max_num_threads; i++) {
 			// Push on the index for each chromosome in the population.
 			//std::cout << "Pushing population value " << i << std::endl;
-
-			// Could push a set of values into the queue (each threads work set).
+	
+		// Could push a set of values into the queue (each threads work set).
 			safe_queue.push(i);
 		}*/
 		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
@@ -459,10 +462,14 @@ private:
 		std::vector<Result >fitness_results;
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
-		Result rel;
+		std::vector<Result > results;
 		while(fitness_results.size() < population_size) {
-			while(result_queue.pop(rel, false)) {
-				fitness_results.push_back(rel);
+			while(result_queue.popAll(results, false)) {
+
+				for(unsigned int i = 0; i < results.size(); i++) {
+					fitness_results.push_back(results[i]);
+				}
+				results.clear();
 				//TODO add results to solutions.
 			}
 		}
