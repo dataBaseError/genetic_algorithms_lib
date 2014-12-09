@@ -45,9 +45,7 @@ protected:
 
 	RouletteWheel rw;
 
-	//boost::lockfree::queue<Result > result_queue;
-	//boost::lockfree::queue<unsigned int> safe_queue;
-	SafeQueue<unsigned int> safe_queue;
+	//SafeQueue<unsigned int> safe_queue;
 	SafeQueue<Result > result_queue;
 
 	boost::thread_group fitness_group;
@@ -141,9 +139,6 @@ public:
 
 	~Manager() {
 
-        // TODO if object no longer exists what does finished do?
-		//finished = true;
-		//safe_queue.finish(threadpool.size());
 	}
 
     /**
@@ -155,7 +150,7 @@ public:
 		initPopulation();
 
 		for(unsigned int i = 0; i < max_generation_number; i++) {
-			std::cout << "Generation " << i << std::endl;
+			//std::cout << "Generation " << i << std::endl;
 			runGeneration();
 		}
 
@@ -164,121 +159,12 @@ public:
 
 
 		//TODO remove
-		safe_queue.finish();
+		//safe_queue.finish();
 		//result_queue.finish();
 
 		fitness_group.join_all();
 		
 	}
-
-    // TODO make this private (after testing)
-	/**
-	 * Prepare the population for the next generation by apply the genetic operations.
-	 */
-	void breed(std::vector<Result > &fitness) {
-		std::vector<Chromosome<T> > new_population;
-
-		//std::cout << "Breeding" << std::endl;
-		rw.init(fitness);
-
-		// Iterate through the chromosomes
-		while(new_population.size() < population_size) {
-			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
-			float selected_operation = op_dist(rand_engine);
-			unsigned int selected_chromosome = rw.next();
-
-			
-			if(selected_operation <= crossover_rate) {
-				// Crossover
-				unsigned int other_selected_chromosome = rw.next();
-
-				// This was the cause of the slow down!
-				/*while(other_selected_chromosome == selected_chromosome) {
-					other_selected_chromosome = rw.next();
-				}*/
-
-				// If the chromosome selected are the same than there is no point apply the crossover.
-				if(other_selected_chromosome != selected_chromosome) {
-					population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
-				} else {
-					population[selected_chromosome].cloning(new_population);
-					population[other_selected_chromosome].cloning(new_population);
-				}
-
-				// Mutate the second chromosome in the crossover
-				mutate((*(new_population.end() - 2)));
-
-				// Handle the case where the new_population.size() -1 == popluation size and then crossover is selected.
-				if(new_population.size() == population_size+1) {
-					new_population.pop_back();
-				}
-			}
-			else {
-				// Clone
-                population[selected_chromosome].cloning(new_population);
-			}
-
-			// Mutate the chromosome
-			mutate(new_population.back());
-
-		}
-
-		// Update the population to the new population
-		population = new_population; // Check if this creates a shallow copy (since we aren't going to change new_population so we just want it to be deallocated at the end of the method).
-
-	}
-
-	/**
- 	 * Apply the self-adaptive operation to determine the similarity of the chromosomes
-	 * and update the mutation rate accordingly.
-	 *
-	 * This might be best fit to have 1 thread designated for it (and if more are available use more).
-	 * Since the fitness function is most likely the longest process, if we complete the fitness functions
-	 * concurrently and then to the selfadaptive (which is a sort and then a comparison) nlogn + n. So by
-	 * doing as many fitness function calls (available_threads - 2, 1 for self adaptive and 1 for fitness
-	 * function manager) we can then call self adaptive as well and and therefore if the fitness functions
-	 * take a long time to execute (or pop_size > available_threads - 2) then we will execute some fitness
-	 * function but will actual finish the self adaptive. This means we wont be doing do all fitness functions
-	 * then self adaptive (aka approx. fitness function execution time * pop_size/(available_threads - 1) + (self adaptive execution time)) rather we'll
-	 * do (some) fitness functions and self adaptive and then remaining as threads become available (approx. fitness function execution * pop_size - 1 / (available_threads - 2) + .
-	 */
-	void selfAdapt() {		
-		// Determine how similar the chromosome is to the rest of the population
-
-		// Sequencial solution
-		// Iterate through the chromosomes
-			// Calculate the current chromosome with each of the others in the population
-
-		// Based on the similarity of the population identify adjust the mutaiton rate
-			//if the similarity is too high (above threshold), increase mutation rate
-			//if similarity is too low (below threshold), decrease mutation rate
-			//otherwise (same as threshold), do nothing
-	}
-
-	/**
-	 * Apply the self adaptive function.
-	 * @param param The manager class.
-	 */
-	/*static void *applySelfAdaptive(void *param) {
-		if(param != NULL) {
-			Manager * m = (Manager *) param;
-			while(true) {
-				pthread_mutex_lock(&m->self_adapt_lock);
-				pthread_cond_wait(&m->self_adapt_wait, &m->self_adapt_lock);
-				pthread_mutex_unlock(&m->self_adapt_lock);
-
-				if(m->finished) {
-					break;
-				}
-
-				m->selfAdapt();
-
-				// proceed with calculating some fitness functions
-			}
-			
-		}
-		return NULL;
-	}*/
 
 	/**
 	 * Get another chromosome and apply the fitness function.
@@ -289,35 +175,27 @@ public:
 			Manager * m = (Manager *) param;
 			unsigned int problem_index;
 
-			//std::vector<unsigned int > indexes;
 			std::vector<Result > results;
 			while(!m->done) {
 
 				if(m->wait_for_work()) {
 					break;
 				}
-			
-				//bool value = ;
-				//if(m->safe_queue.pop(problem_size, indexes)) {
-					//std::cout << "Grabbing a Chromosome " << std::endl;
-					// Can we trust the user to not change the chromosome? No.
 
-					for(unsigned int i = 0; i < problem_size; i++) {
-						// TODO loop through the grabbed indexes and apply them
-						Chromosome<T> t = m->population[start_index+i];
+				// Can we trust the user to not change the chromosome? No.
+				for(unsigned int i = 0; i < problem_size; i++) {
 
-						results.push_back(Result(start_index+i, m->fitness_function(t)));
-					}
+					Chromosome<T> t = m->population[start_index+i];
 
-					//std::pair<unsigned int, double >temp (problem_index, m->fitness_function(t));
-					//Result r = Result(problem_index, m->fitness_function(t));
-					m->result_queue.push(results);
+					results.push_back(Result(start_index+i, m->fitness_function(t)));
+				}
 
-					// Store them in results;
-				//}
+				// Store them in results
+				m->result_queue.push(results);
 
-				//indexes.clear();
 				results.clear();
+
+				//TODO consider a barrier to make all the threads wait until all other threads are complete and then apply breeding in the threads.
 			}
 		}
 	}
@@ -395,19 +273,7 @@ private:
 			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
 			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this, count, problem_size));
 			count+= problem_size;
-
-			// TODO decide if this is useful
-			//this->num_threads_used++;
 		}
-
-		/*
-		if(use_self_adaptive) {
-			pthread_mutex_init(&self_adapt_lock, 0);
-			pthread_cond_init(&self_adapt_wait, 0);
-
-			pthread_t self_adapt;
-			pthread_create(&self_adapt, 0, applySelfAdaptive, (void *)this);
-		}*/
 	}
 
 	/**
@@ -423,39 +289,11 @@ private:
 	/**
 	 * Apply the fitness function to the population. Given the result of the
 	 * fitness function, the next population is bred.
-	 *
-	 * There are several approaches we could take to mapping the number of available threads to the problems:
-	 * Each thread is given a problem to solve and will pull off another problem once it is finished.
-	 * 	- Adv. Can effectively balance the load
-	 * 	- Adv. Easy to implement (with shared memory which threads have).
-	 * 	- Dis. Requires more communication
-	 * 	- Dis. Requires a manager thread
 	 */
 	void runGeneration() {
 
 		set_waiting(true);
 		m_cond.notify_all();
-		
-		// For each thread push the problems
-		/*for(unsigned int i = 0; i < this->max_num_threads; i++) {
-			// Push on the index for each chromosome in the population.
-			//std::cout << "Pushing population value " << i << std::endl;
-	
-		// Could push a set of values into the queue (each threads work set).
-			safe_queue.push(i);
-		}*/
-		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
-			// eg; in N-Queens you can rotate the board in order to find more solutions.
-
-		// Can be done concurrently with the fitness function
-		/*if(use_self_adaptive) {
-				// Create a thread to handle selfAdapt()
-				pthread_mutex_lock(&self_adapt_lock);
-				pthread_cond_signal(&self_adapt_wait);
-				pthread_mutex_unlock(&self_adapt_lock);
-		}*/
-
-		//fitness_group.join_all();
 
 		// Main thread will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
@@ -476,7 +314,59 @@ private:
 
 		set_waiting(false);
 				
-		breed(fitness_results);//*/
+		breed(fitness_results);
+	}
+
+	/**
+	 * Prepare the population for the next generation by apply the genetic operations.
+	 */
+	void breed(std::vector<Result > &fitness) {
+		std::vector<Chromosome<T> > new_population;
+
+		//std::cout << "Breeding" << std::endl;
+		rw.init(fitness);
+
+		// Iterate through the chromosomes
+		while(new_population.size() < population_size) {
+			// Use a random number between to identify which operation to apply (each operation gets a slice of the range)
+			float selected_operation = op_dist(rand_engine);
+			unsigned int selected_chromosome = rw.next();
+
+			
+			if(selected_operation <= crossover_rate) {
+				// Crossover
+				unsigned int other_selected_chromosome = rw.next();
+
+				// If the chromosome selected are the same than there is no point apply the crossover.
+				if(other_selected_chromosome != selected_chromosome) {
+					population[selected_chromosome].crossover(population[other_selected_chromosome], new_population);
+				} else {
+					population[selected_chromosome].cloning(new_population);
+					population[other_selected_chromosome].cloning(new_population);
+				}
+
+				// Mutate the second chromosome in the crossover
+				mutate((*(new_population.end() - 2)));
+
+				// Handle the case where the new_population.size() -1 == popluation size and then crossover is selected.
+				if(new_population.size() == population_size+1) {
+					new_population.pop_back();
+				}
+			}
+			else {
+				// Clone
+                population[selected_chromosome].cloning(new_population);
+			}
+
+			// Mutate the chromosome
+			mutate(new_population.back());
+
+		}
+
+		//std::cout << "Finished Breeding" << std::endl;
+
+		// Update the population to the new population
+		population = new_population;
 	}
 };
 
