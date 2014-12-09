@@ -5,6 +5,8 @@
 #include <vector>
 #include <utility>
 
+#include "Result.hpp"
+
 /**
  * Selection interface, defines the operations that all selection method
  * implementations such as roulette wheel selection must provide.
@@ -20,7 +22,7 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the selection.
      */
-    virtual void init(std::vector<std::pair<unsigned int, double> > &fitness) = 0;
+    virtual void init(std::vector<Result > &fitness) = 0;
 
     /**
      * The iterator method which uses the selection method to get the next

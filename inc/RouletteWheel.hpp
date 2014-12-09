@@ -6,6 +6,7 @@
 #include <map>
 
 #include "Selection.hpp"
+#include "Result.hpp"
 
 class RouletteWheel : public Selection
 {
@@ -34,7 +35,7 @@ public:
      * @param fitness The fitness distribution for the chromosomes to be used
      * for the roulette wheel selection.
      */
-    virtual void init(std::vector<std::pair<unsigned int, double> > &fitness);
+    virtual void init(std::vector<Result > &fitness);
 
     /**
      * The iterator method which uses roulette wheel selection to get the next

@@ -11,7 +11,7 @@ RouletteWheel::~RouletteWheel() {
 
 }
 
-void RouletteWheel::init(std::vector<std::pair<unsigned int, double> > &fitness)
+void RouletteWheel::init(std::vector<Result > &fitness)
 {
 	double lower = this->left;
 	double upper = this->right;
@@ -19,7 +19,7 @@ void RouletteWheel::init(std::vector<std::pair<unsigned int, double> > &fitness)
 	// Calculate the right bound
 	for (auto it = fitness.begin(); it != fitness.end(); ++it)
 	{
-		this->right += it->second + this->EPSILON;
+		this->right += it->getResult() + this->EPSILON;
 	}
 
 	// Initialize the uniform distribution random generator
@@ -28,8 +28,8 @@ void RouletteWheel::init(std::vector<std::pair<unsigned int, double> > &fitness)
 	// Add each chromosome and interval to roulette wheel selection
 	for (auto it = fitness.begin(); it != fitness.end(); ++it)
 	{
-		upper = lower + it->second;
-		this->selection.insert({std::make_pair(lower, upper), it->first});
+		upper = lower + it->getResult();
+		this->selection.insert({std::make_pair(lower, upper), it->getIndex()});
 		lower = upper + this->EPSILON;
 	}
 }
