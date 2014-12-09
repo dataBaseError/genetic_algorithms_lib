@@ -1,6 +1,6 @@
 #include "Result.hpp"
 
-
+/*
 Result::Result() {
 	this->index = 0;
 	this->result = 0;
@@ -25,4 +25,4 @@ double Result::getResult() {
 
 void Result::setResult(double result) {
 	this->result = result;
-}
+}*/
