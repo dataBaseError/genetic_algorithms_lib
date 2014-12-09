@@ -64,6 +64,10 @@ protected:
 	// Library flags
 	//int number_of_threads = 5;
 	boost::atomic<bool> done;
+	boost::atomic<bool> waiting;
+
+	boost::condition_variable m_cond;
+	boost::mutex mtx_;
 
 	// Fitness function
 	double (*fitness_function)(Chromosome<T>);
@@ -151,15 +155,19 @@ public:
 		initPopulation();
 
 		for(unsigned int i = 0; i < max_generation_number; i++) {
-			//std::cout << "Starting Generation " << i << std::endl;
+			std::cout << "Generation " << i << std::endl;
 			runGeneration();
 		}
 
 		done = true;
+		m_cond.notify_all();
 
+
+		//TODO remove
 		safe_queue.finish();
-		
 		//result_queue.finish();
+
+		fitness_group.join_all();
 		
 	}
 
@@ -273,25 +281,29 @@ public:
 	 * Get another chromosome and apply the fitness function.
 	 * @param param The manager the thread is running for.
 	 */
-	static void calcFitnessFunction(void *param, unsigned int problem_size) {
+	static void calcFitnessFunction(void *param, unsigned int start_index, unsigned int problem_size) {
 		if(param != NULL) {
 			Manager * m = (Manager *) param;
 			unsigned int problem_index;
 
-			std::vector<unsigned int > indexes;
+			//std::vector<unsigned int > indexes;
 			std::vector<Result > results;
 			while(!m->done) {
 
+				if(m->wait_for_work()) {
+					break;
+				}
+			
 				//bool value = ;
-				if(m->safe_queue.pop(problem_size, indexes)) {
+				//if(m->safe_queue.pop(problem_size, indexes)) {
 					//std::cout << "Grabbing a Chromosome " << std::endl;
 					// Can we trust the user to not change the chromosome? No.
 
-					for(unsigned int i = 0; i < indexes.size(); i++) {
+					for(unsigned int i = 0; i < problem_size; i++) {
 						// TODO loop through the grabbed indexes and apply them
-						Chromosome<T> t = m->population[indexes[i]];
+						Chromosome<T> t = m->population[start_index+i];
 
-						results.push_back(Result(problem_index, m->fitness_function(t)));
+						results.push_back(Result(start_index+i, m->fitness_function(t)));
 					}
 
 					//std::pair<unsigned int, double >temp (problem_index, m->fitness_function(t));
@@ -299,9 +311,9 @@ public:
 					m->result_queue.push(results);
 
 					// Store them in results;
-				}
+				//}
 
-				indexes.clear();
+				//indexes.clear();
 				results.clear();
 			}
 		}
@@ -333,6 +345,24 @@ public:
 
 private:
 
+	bool wait_for_work() {
+		boost::unique_lock<boost::mutex> lock(mtx_);
+		if(!done) {
+			if(!waiting) {
+				m_cond.wait(lock);
+			}			
+		}
+		else {
+			return true;
+		}
+		return false;
+	}
+
+	void set_waiting(bool val){
+		boost::unique_lock<boost::mutex> guard(mtx_);
+		waiting = val;
+	}
+
 	/**
 	 * Setup the necessary variables for genetic algorithm.
 	 */
@@ -346,12 +376,22 @@ private:
 		done = false;
 
 		int problem_size = population_size/max_num_threads;
+		int count = 0;
 
 		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
 		for(unsigned int i = 0; i < max_num_threads; i++) {
 
+			if (i+1 == max_num_threads && population_size % max_num_threads != 0) {
+
+				// Handle the case where the problem_size does not evenly divide by the 
+				// number of threads available. Last thread receives remainder.
+				// This is not the best solution but is passible.
+				problem_size = population_size % max_num_threads;
+			}
+
 			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
-			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this, problem_size));
+			fitness_group.create_thread(boost::bind(calcFitnessFunction, (void *) this, count, problem_size));
+			count+= problem_size;
 
 			// TODO decide if this is useful
 			//this->num_threads_used++;
@@ -390,14 +430,17 @@ private:
 	 */
 	void runGeneration() {
 
-		// Given that threads are going to be used:
-			// - Create a thread pool and attempt to assign a reduced set of chromosomes to each thread
-			// - Since each chromosome is independent for the execution of the fitness function they can be 1 thread per chromosome (hypothedically)
-		for(unsigned int i = 0; i < this->population_size; i++) {
+		set_waiting(true);
+		m_cond.notify_all();
+		
+		// For each thread push the problems
+		/*for(unsigned int i = 0; i < this->max_num_threads; i++) {
 			// Push on the index for each chromosome in the population.
 			//std::cout << "Pushing population value " << i << std::endl;
+
+			// Could push a set of values into the queue (each threads work set).
 			safe_queue.push(i);
-		}
+		}*/
 		// Could potentially have a second generic method that you could use to apply heuristics to a found solution.
 			// eg; in N-Queens you can rotate the board in order to find more solutions.
 
@@ -417,17 +460,16 @@ private:
 
 		// Wait for all the chromosomes to finish calculating their fitness value.
 		Result rel;
-		//std::cout << "Waiting" << std::endl;
 		while(fitness_results.size() < population_size) {
 			while(result_queue.pop(rel, false)) {
 				fitness_results.push_back(rel);
-				//std::cout << "Pushed another one" << std::endl;
 				//TODO add results to solutions.
 			}
 		}
-		//std::cout << "done" << std::endl;
 
-		//breed(fitness_results);//*/
+		set_waiting(false);
+				
+		breed(fitness_results);//*/
 	}
 };
 
