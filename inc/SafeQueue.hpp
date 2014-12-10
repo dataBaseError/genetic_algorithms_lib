@@ -1,9 +1,3 @@
-/*
- * safe_queue.hpp
- *
- *  Created on: 2014-11-11
- *      Author: joseph
- */
 
 #ifndef SAFE_QUEUE_HPP_
 #define SAFE_QUEUE_HPP_
