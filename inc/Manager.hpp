@@ -10,7 +10,7 @@
 #include <utility>			 // make_pair
 
 #include <boost/thread/thread.hpp>
-#include <boost/lockfree/queue.hpp>
+//#include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
 
 #include "Chromosome.hpp"
@@ -31,10 +31,7 @@ protected:
 	T max_chromosome_value;
 	T min_chromosome_value;
 
-	bool use_self_adaptive;
 	double mutation_rate;
-	double mutation_change_rate;
-	double similarity_index;
 
 	double crossover_rate;
 
@@ -72,43 +69,6 @@ protected:
 
 public:
 
-
-    // TODO this should take a configuration struct/object that has a lot of default parameters
-	/**
-	 * Create a manager for GA.
-	 * @param population_size The size of population.
-	 * @param chromosome_size The size of each chromosome.
-	 * @param max_chromosome_value The maximum possible value for the chromosome.
-	 * @param min_chromosome_value The minimum possible value for the chromosome.
-	 * @param use_self_adaptive Whether to use a self adaptive approach. If this is true
-	 * then the mutation rate will be updated based on the similarity of the population.
-	 * @param mutation_rate The mutation rate that is used. This is the likelihood that the
-	 * mutation operation is applied. If the self adaptive approach is used then this is
-	 * the initial mutation rate.
-	 * @param mutation_change_rate The rate by which the mutation rate will be updated.
-	 * If use_self_adaptive is set to false then this parameter is ignored.
-	 * @param similarity_index The threshold at which the similarity mutation rate is
-	 * updated.
-	 * @param crossover_rate The crossover rate, the likelihood that a chromosome
-	 * has the crossover operation applied to it.
-	 * @param cloning_rate The cloning rate, the likelihood that a cromosome will be
-	 * cloned into the new population.
-	 */
-	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
-			T max_chromosome_value, T min_chromosome_value, bool use_self_adaptive,
-			double mutation_rate, double mutation_change_rate, double similarity_index,
-			double crossover_rate, unsigned int num_threads) : population_size(population_size),
-			chromosome_size(chromosome_size), max_generation_number(max_generation_number),
-			max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
-			use_self_adaptive(use_self_adaptive), mutation_rate(mutation_rate),
-			mutation_change_rate(mutation_change_rate), similarity_index(similarity_index),
-			crossover_rate(crossover_rate), max_num_threads(num_threads)//, safe_queue(population_size), 
-			//result_queue(population_size)
-			{
-		population = std::vector<Chromosome<T > >(population_size);
-		initialize();
-	}
-
     // TODO this should take a configuration struct/object that has a lot of default parameters
 	/**
 	 * Create a non self-adaptive GA manager
@@ -129,10 +89,9 @@ public:
 				double crossover_rate, unsigned int num_threads) : population_size(population_size),
 				chromosome_size(chromosome_size), max_generation_number(max_generation_number),
 				max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
-				use_self_adaptive(false), mutation_rate(mutation_rate), mutation_change_rate(0), 
-				similarity_index(0), crossover_rate(crossover_rate), population(population_size),
-				max_num_threads(num_threads){
-
+				mutation_rate(mutation_rate), crossover_rate(crossover_rate),
+				population(population_size), max_num_threads(num_threads){
+		population = std::vector<Chromosome<T > >(population_size);
 		initialize(); 
 
 	}
