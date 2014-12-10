@@ -77,9 +77,17 @@ public:
 		result = values[index];
 	}
 
+	T& at(unsigned int index) {
+		boost::unique_lock<boost::mutex> lock(mtx_);
+		return values[index];
+	}
+
+	// Not thread safe and therefore outside protection must be applied to ensure data integrity.
+	// This is more meant to be used in the way to retrieve a local copy to safely use without 
+	// the over kill of locking each access (lock once and then access as many as possible)
 	void getAll(std::vector<T > &result) {
 
-		boost::unique_lock<boost::mutex> lock(mtx_);
+		//boost::unique_lock<boost::mutex> lock(mtx_);
 		result = values;
 	}
 
@@ -99,15 +107,20 @@ public:
 	 * This is implemented to increase performance for a push that involves a
 	 * large sum of entries which can be accomplished faster than fighting
 	 * other threads for access to the mutex several times.
+	 * NOTE entries cannot be a reference to the array of 'this' since insert
+	 * is used and it does not allow for values to be inserted via iterator from
+	 * the same vector.
 	 * 
 	 * @param entries The list of values to push into the vector.
 	 */
 	void push_back(std::vector<T > &entries) {
 		boost::unique_lock<boost::mutex> guard(mtx_);
 
-		for(unsigned int i = 0; i < entries.size(); i++) {
+		values.insert(values.end(), entries.begin(), entries.end());
+
+		/*for(unsigned int i = 0; i < entries.size(); i++) {
 			values.push_back(entries[i]);
-		}
+		}*/
 	}
 
 	/**

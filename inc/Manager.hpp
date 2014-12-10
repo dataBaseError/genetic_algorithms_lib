@@ -39,9 +39,10 @@ protected:
 	double crossover_rate;
 
 	std::vector<Chromosome<T> > population;
+	SafeVector<Chromosome<T > > master_population;
 
 	// Need to have some way of ensure no duplication of solutions
-	SafeQueue<Chromosome<T> > solutions;
+	SafeVector<Chromosome<T> > solutions;
 
 	RouletteWheel rw;
 
@@ -72,12 +73,14 @@ protected:
 
 	boost::thread_group competitor_group;
 	boost::barrier wall;
+	boost::barrier whistle;
 
 	// Fitness function
 	double (*fitness_function)(Chromosome<T>);
 public:
 
     // TODO this should take a configuration struct/object that has a lot of default parameters
+    // Define the barrier to accept 1 per thread per competitor and 1 per competitor and 1 for the master thread
 	/**
 	 * Create a non self-adaptive GA manager
 	 * @param population_size The size of population.
@@ -89,7 +92,7 @@ public:
 	 * the initial mutation rate.
 	 * @param crossover_rate The crossover rate, the likelihood that a chromosome
 	 * has the crossover operation applied to it.
-	 * @param cloning_rate The cloning rate, the likelihood that a cromosome will be
+	 * @param cloning_rate The cloning rate, the likelihood that a chromosome will be
 	 * cloned into the new population.
 	 */
 	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
@@ -99,8 +102,9 @@ public:
 				max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
 				mutation_rate(mutation_rate), crossover_rate(crossover_rate),
 				population(population_size), num_competitor(num_competitor), 
-				max_num_threads(num_threads), wall(num_competitor*num_threads + num_competitor) {
-				// Define the barrier to accept 1 per thread per competitor and 1 per competitor
+				max_num_threads(num_threads), wall(num_competitor*num_threads + num_competitor + 1),
+				whistle(num_competitor) {
+				
 		//population = std::vector<Chromosome<T > >(population_size);
 		initialize(); 
 
@@ -153,7 +157,7 @@ public:
 			// Can we trust the user to not change the chromosome? No.
 			for(unsigned int i = 0; i < problem_size; i++) {
 
-				Chromosome<T> t = comp->population[start_index+i];
+				Chromosome<T> t = comp->population.at(start_index+i);
 
 				results.push_back(Result(start_index+i, m->fitness_function(t)));
 			}
@@ -173,7 +177,9 @@ public:
 	}
 
 	std::vector<Chromosome<T > > getSolutions() {
-		return this->solutions;
+		std::vector<Chromosome<T > > temp;
+		this->solutions.getAll(temp);
+		return temp;
 	}
 
     // TODO make this private (after testing)
@@ -286,7 +292,7 @@ private:
 		comp->fitness_results.clear();
 		
 		std::vector<Result > results;
-		std::vector<Result > solutions;
+		std::vector<Chromosome<T > > solutions;
 
 		// Main threads will wait for all children to finish executing before proceeding.
 		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
@@ -294,12 +300,12 @@ private:
 		while(comp->fitness_results.size() < comp->getPopulationSize()) {
 			while(comp->result_queue.popAll(results, false)) {
 
-				comp->fitness_results.push_back(results[i]);
+				comp->fitness_results.push_back(results);
 
 				for(unsigned int i = 0; i < results.size(); i++) {
 					// Store the solutions locally
 					if(results[i].getResult() == 1.0) {
-						solutions.push_back(comp->population[results[i].getIndex()]);
+						solutions.push_back(comp->population.at(results[i].getIndex()));
 					}
 				}
 
@@ -315,8 +321,10 @@ private:
 		// Set the workers able to wait once they have finished their work
 		comp->set_waiting(false);
 
-		// Need to create the master fitness roulette and the master population
+		// Wait for the other competitors to finish mutating
+		m->whistle.wait();
 
+		// Wait for the referee to set up the next generation
 		m->wall.wait();
 				
 		//breed(fitness_results); referee
@@ -325,28 +333,44 @@ private:
 	void referee() {
 
 		// Wait for the competitor threads to signal that their populations are ready.
+		whistle.wait();
+
+
+		// This should prob. be safe a vector and an attribute of Manager.
+		
 
 		std::vector<Result > master_fitness;
-		std::vector<Chromosome<T > > master_population;
-
 		std::vector<Result > c_fitness;
+		std::vector<Chromosome<T > > temp_population;
 		unsigned int offset = 0;
 
 		for(unsigned int i = 0; i < competitors.size(); i++) {
 			competitors[i]->fitness_results.getAll(c_fitness);
+			competitors[i]->population.getAll(temp_population);
 
-			for(unsigned int j = 0; j < c_fitness.size(); j++) {
-				c_fitness[j].offsetIndex(offset)
+			for(unsigned int j = 0; j < competitors[i]->getPopulationSize(); j++) {
+
+				// Add the conversion offset
+				c_fitness[j].offsetIndex(offset);
+
+				// Append the value to the master fitness function
+				master_fitness.push_back(c_fitness[j]);
 			}
 			
+			// Append the chromosome to the master population
+			master_population.push_back(temp_population);
+			
 			// The next fitness function master index location is at sum(i=0,i=prev_competitor,fitness_size)
-			// e.g. competitor 2's master index location for the local first value (c_fitness[0]) is competitor_1.size()
-			// and the second local value (c_fitness[1]) is competitor_1.size()+1 and so on.
-			offset+= c_fitness.size();
+			// e.g. competitor 2's master index location for the local first value (i = 1, c_fitness[0]) is competitor_1.size()
+			// and the second local value (i = 1, c_fitness[1]) is competitor_1.size() + 1 and so on.
+			offset+= competitors[i]->fitness_results.size();
 
-			// Append the c_fitness to the master_fitness
-			master_fitness.insert(master_fitness.end(), c_fitness.begin(), c_fitness.end());
 		}
+
+		rw.init(master_fitness);
+
+		// Notify competitors that they are free to proceed.
+		wall.wait();
 	}
 
 	/**
@@ -356,7 +380,7 @@ private:
 		std::vector<Chromosome<T> > new_population;
 
 		//std::cout << "Breeding" << std::endl;
-		rw.init(fitness);
+		//.rw.init(fitness);
 
 		// Iterate through the chromosomes
 		while(new_population.size() < population_size) {
@@ -380,7 +404,7 @@ private:
 				// Mutate the second chromosome in the crossover
 				mutate((*(new_population.end() - 2)));
 
-				// Handle the case where the new_population.size() -1 == popluation size and then crossover is selected.
+				// Handle the case where the new_population.size() -1 == population size and then crossover is selected.
 				if(new_population.size() == population_size+1) {
 					new_population.pop_back();
 				}

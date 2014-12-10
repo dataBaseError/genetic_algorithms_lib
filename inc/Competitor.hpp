@@ -28,9 +28,10 @@ class Competitor {
 public:
 
 	boost::atomic<bool> done;
-	std::vector<Chromosome<T > > population;
+	SafeVector<Chromosome<T > > population;
 	SafeQueue<Result > result_queue;
 
+	// This should not need to be a safe vector since access will be syncronized by other mechinsims
 	SafeVector<Result >fitness_results;
 
 	// Will define number_of_competitors which will have a number of worker threads and the following values set for them:
