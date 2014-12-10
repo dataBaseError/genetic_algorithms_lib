@@ -41,6 +41,10 @@ public:
 		this->index = index;
 	}
 
+	void offsetIndex(unsigned int offset) {
+		this->index += offset;
+	}
+
 	double getResult() {
 		return result;
 	}

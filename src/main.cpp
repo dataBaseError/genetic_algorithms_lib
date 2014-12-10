@@ -27,21 +27,19 @@ void testManager_uint() {
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 1000;
-	bool use_self_adaptive = false;
+	unsigned int max_gen = 10000;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
-	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 
+	unsigned int num_compeditors = 2;
 	unsigned int num_threads = 5;
 
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
-				max_value, min_value, use_self_adaptive,
-				mutation_rate, mutation_change_rate, similarity_index,
-				crossover_rate, num_threads);
+				max_value, min_value, mutation_rate, crossover_rate,
+				num_compeditors, num_threads);
 
-	manager.initPopulation();
+	/*manager.initPopulation();
 
 	std::cout << "Initial Population " << std::endl;
 	std::vector<Chromosome<unsigned int> > initial_pop = manager.getPopulation();
@@ -57,13 +55,27 @@ void testManager_uint() {
 	}
 
 	//test Manager::run after calling for a single generation
-	manager.run(&calculate);
+	
 
 	std::cout << "Result Population: " << std::endl;
 	std::vector<Chromosome<unsigned int> > final_pop = manager.getPopulation();
 	for (unsigned int i = 0; i < pop_size; i++) {
 		for (unsigned int j = 0; j < chromo_size; j++) {
 			std::cout << final_pop[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}*/
+	manager.run(&calculate);
+
+	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
+
+	for (unsigned int i = 0; i < solutions.size(); i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << solutions[i][j];
 			if(j +1 < chromo_size) {
 				std::cout << ",";
 			}

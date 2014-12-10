@@ -29,6 +29,10 @@ void RouletteWheel::init(std::vector<Result > &fitness)
 	this->distribution = std::uniform_real_distribution<double>(this->left, this->right);
 
 	// Add each chromosome and interval to roulette wheel selection
+
+	// TODO consider using a sorted map, when iterated through will go from largest to smallest
+	// fitness (since the roulette wheel is most likely going to hit the large values and thus
+	// save time in the look through)
 	for (auto it = fitness.begin(); it != fitness.end(); ++it)
 	{
 		upper = lower + it->getResult();

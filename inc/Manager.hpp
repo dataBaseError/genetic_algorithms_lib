@@ -11,13 +11,16 @@
 
 #include <boost/thread/thread.hpp>
 //#include <boost/lockfree/queue.hpp>
+#include <boost/thread/barrier.hpp>
 #include <boost/atomic.hpp>
 
 #include "Chromosome.hpp"
 #include "RouletteWheel.hpp"
 #include "Result.hpp"
 
+#include "Competitor.hpp"
 #include "SafeQueue.hpp"
+#include "SafeVector.hpp"
 
 template <class T>
 class Manager {
@@ -38,7 +41,7 @@ protected:
 	std::vector<Chromosome<T> > population;
 
 	// Need to have some way of ensure no duplication of solutions
-	std::vector<Chromosome<T> > solutions;
+	SafeQueue<Chromosome<T> > solutions;
 
 	RouletteWheel rw;
 
@@ -64,9 +67,14 @@ protected:
 	boost::condition_variable m_cond;
 	boost::mutex mtx_;
 
+	unsigned int num_competitor;
+	std::vector<Competitor<T >* > competitors;
+
+	boost::thread_group competitor_group;
+	boost::barrier wall;
+
 	// Fitness function
 	double (*fitness_function)(Chromosome<T>);
-
 public:
 
     // TODO this should take a configuration struct/object that has a lot of default parameters
@@ -86,12 +94,14 @@ public:
 	 */
 	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
 				T max_chromosome_value, T min_chromosome_value, double mutation_rate,
-				double crossover_rate, unsigned int num_threads) : population_size(population_size),
+				double crossover_rate, unsigned int num_competitor, unsigned int num_threads) : population_size(population_size),
 				chromosome_size(chromosome_size), max_generation_number(max_generation_number),
 				max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
 				mutation_rate(mutation_rate), crossover_rate(crossover_rate),
-				population(population_size), max_num_threads(num_threads){
-		population = std::vector<Chromosome<T > >(population_size);
+				population(population_size), num_competitor(num_competitor), 
+				max_num_threads(num_threads), wall(num_competitor*num_threads + num_competitor) {
+				// Define the barrier to accept 1 per thread per competitor and 1 per competitor
+		//population = std::vector<Chromosome<T > >(population_size);
 		initialize(); 
 
 	}
@@ -101,16 +111,20 @@ public:
 	}
 
     /**
-	 * Run the algorithm for the specificed number of generations
+	 * Run the algorithm for the specified number of generations
 	 */	
 	void run(double (*fitness_function)(Chromosome<T>)) {
+
+		/*for(unsigned int i = 0; i < num_competitor; i++) {
+			competitors[i]->setFitness(fitness_function);
+		}*/
 		this->fitness_function = fitness_function;
 
 		initPopulation();
 
 		for(unsigned int i = 0; i < max_generation_number; i++) {
 			//std::cout << "Generation " << i << std::endl;
-			runGeneration();
+			//runGeneration();
 		}
 
 		done = true;
@@ -122,33 +136,39 @@ public:
 
 	/**
 	 * Get another chromosome and apply the fitness function.
-	 * @param param The manager the thread is running for.
+	 * @param m The manager the thread is running for.
+	 * TODO finish the documentation
 	 */
-	static void calcFitnessFunction(Manager *m, unsigned int start_index, unsigned int problem_size) {
+	static void calcFitnessFunction(Manager *m, Competitor<T > *comp, unsigned int start_index, unsigned int problem_size) {
 
 		unsigned int problem_index;
 
 		std::vector<Result > results;
-		while(!m->done) {
+		while(!comp->done) {
 
-			if(m->wait_for_work()) {
+			if(comp->wait_for_work()) {
 				break;
 			}
 
 			// Can we trust the user to not change the chromosome? No.
 			for(unsigned int i = 0; i < problem_size; i++) {
 
-				Chromosome<T> t = m->population[start_index+i];
+				Chromosome<T> t = comp->population[start_index+i];
 
 				results.push_back(Result(start_index+i, m->fitness_function(t)));
 			}
 
 			// Store them in results
-			m->result_queue.push(results);
+			comp->result_queue.push(results);
 
 			results.clear();
 
-			//TODO consider a barrier to make all the threads wait until all other threads are complete and then apply breeding in the threads.
+			// Wait for all the threads to complete their fitness functions
+			m->wall.wait();
+
+			// Breed the population
+
+			// Each worker thread is responsible for replacing their own sub population of their competitor
 		}
 	}
 
@@ -212,23 +232,35 @@ private:
 		Chromosome<T>::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 		done = false;
 
-		int problem_size = population_size/max_num_threads;
-		int count = 0;
+		int problem_size;
+		int count;
 
-		// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
-		for(unsigned int i = 0; i < max_num_threads; i++) {
+		for(unsigned int j = 0; j < num_competitor; j++) {
 
-			if (i+1 == max_num_threads && population_size % max_num_threads != 0) {
+			// TODO update this to allow for variations of these three parameters.
+			Competitor<T > competitor(population_size, mutation_rate, crossover_rate);
 
-				// Handle the case where the problem_size does not evenly divide by the 
-				// number of threads available. Last thread receives remainder.
-				// This is not the best solution but is passible.
-				problem_size = population_size % max_num_threads;
+			problem_size = competitor.getPopulationSize()/max_num_threads;
+			count = 0;
+
+			// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
+			for(unsigned int i = 0; i < max_num_threads; i++) {
+
+				if (i+1 == max_num_threads && competitor.getPopulationSize() % max_num_threads != 0) {
+
+					// Handle the case where the problem_size does not evenly divide by the 
+					// number of threads available. Last thread receives remainder.
+					// This is not the best solution but is passable.
+					problem_size = competitor.getPopulationSize() % max_num_threads;
+				}
+
+				//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
+				fitness_group.create_thread(boost::bind(calcFitnessFunction, this, &competitor, count, problem_size));
+				count+= problem_size;
 			}
 
-			//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
-			fitness_group.create_thread(boost::bind(calcFitnessFunction, this, count, problem_size));
-			count+= problem_size;
+			competitor_group.create_thread(boost::bind(runGeneration, this, &competitor));
+			competitors.push_back(&competitor);
 		}
 	}
 
@@ -246,36 +278,75 @@ private:
 	 * Apply the fitness function to the population. Given the result of the
 	 * fitness function, the next population is bred.
 	 */
-	void runGeneration() {
+	static void runGeneration(Manager *m, Competitor<T > *comp) {
 
-		set_waiting(true);
-		m_cond.notify_all();
+		comp->set_waiting(true);
+		comp->start_working();
 
-		// Main thread will wait for all children to finish executing before proceeding.
-		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
-		std::vector<Result >fitness_results;
-
-		// Wait for all the chromosomes to finish calculating their fitness value.
+		comp->fitness_results.clear();
+		
 		std::vector<Result > results;
-		while(fitness_results.size() < population_size) {
-			while(result_queue.popAll(results, false)) {
+		std::vector<Result > solutions;
+
+		// Main threads will wait for all children to finish executing before proceeding.
+		// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
+		// Wait for all the chromosomes to finish calculating their fitness value.
+		while(comp->fitness_results.size() < comp->getPopulationSize()) {
+			while(comp->result_queue.popAll(results, false)) {
+
+				comp->fitness_results.push_back(results[i]);
 
 				for(unsigned int i = 0; i < results.size(); i++) {
-					fitness_results.push_back(results[i]);
-
-					//TODO add results to solutions.
+					// Store the solutions locally
 					if(results[i].getResult() == 1.0) {
-						solutions.push_back(population[results[i].getIndex()]);
+						solutions.push_back(comp->population[results[i].getIndex()]);
 					}
 				}
-				results.clear();
+
+				// Add the solutions to the master solutions vector
+				m->solutions.push_back(solutions);
 				
+				results.clear();
+				solutions.clear();
 			}
 		}
 
-		set_waiting(false);
+		// TODO consider removing (since worker threads are also going to do the breeding)
+		// Set the workers able to wait once they have finished their work
+		comp->set_waiting(false);
+
+		// Need to create the master fitness roulette and the master population
+
+		m->wall.wait();
 				
-		breed(fitness_results);
+		//breed(fitness_results); referee
+	}
+
+	void referee() {
+
+		// Wait for the competitor threads to signal that their populations are ready.
+
+		std::vector<Result > master_fitness;
+		std::vector<Chromosome<T > > master_population;
+
+		std::vector<Result > c_fitness;
+		unsigned int offset = 0;
+
+		for(unsigned int i = 0; i < competitors.size(); i++) {
+			competitors[i]->fitness_results.getAll(c_fitness);
+
+			for(unsigned int j = 0; j < c_fitness.size(); j++) {
+				c_fitness[j].offsetIndex(offset)
+			}
+			
+			// The next fitness function master index location is at sum(i=0,i=prev_competitor,fitness_size)
+			// e.g. competitor 2's master index location for the local first value (c_fitness[0]) is competitor_1.size()
+			// and the second local value (c_fitness[1]) is competitor_1.size()+1 and so on.
+			offset+= c_fitness.size();
+
+			// Append the c_fitness to the master_fitness
+			master_fitness.insert(master_fitness.end(), c_fitness.begin(), c_fitness.end());
+		}
 	}
 
 	/**
