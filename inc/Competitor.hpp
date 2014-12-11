@@ -22,8 +22,6 @@ class Competitor {
 
 	boost::atomic<bool> waiting;
 
-	boost::barrier breed_wall;
-
 public:
 
 	boost::atomic<bool> done;
@@ -34,9 +32,9 @@ public:
 	SafeVector<Result >fitness_results;
 
 	Competitor(unsigned int population_size, double mutation_rate, double
-		crossover_rate, unsigned int num_workers) : population_size(population_size),
+		crossover_rate) : population_size(population_size),
 		mutation_rate(mutation_rate), crossover_rate(crossover_rate),
-		done(false), waiting(false), breed_wall(num_workers) {
+		done(false), waiting(false) {
 	}
 
 	~Competitor() {
@@ -51,10 +49,6 @@ public:
 		std::vector<Chromosome<T > > pop;
 		Chromosome<T >::initPopulation(pop, this->population_size, chromosome_size);
 		this->population.push_back(pop);
-	}
-
-	void wait() {
-		this->breed_wall.wait();
 	}
 
 };

@@ -227,11 +227,7 @@ public:
 			std::vector<Chromosome<T > > sub_population = m->breed(comp->getPopulationSize(), problem_size);
 
 			// Join the populations back together.
-			//std::cout << "sub_population size " << sub_population.size() << std::endl;
-			comp->population.push_back(sub_population);
-
-			// Wait until all other populations have collected together their stuff.
-			comp->wait();
+			comp->population.copy(start_index, sub_population);
 
 			//std::cout << "Finished breeding" << std::endl;
 		}
@@ -291,7 +287,7 @@ private:
 		for(unsigned int j = 0; j < num_competitor; j++) {
 
 			// TODO update this to allow for variations of these three parameters.
-			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_size, mutation_rate, crossover_rate, max_num_threads));
+			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_size, mutation_rate, crossover_rate));
 
 			//std::cout << "Adding to vector " << std::endl;
 			competitors.push_back(competitor);
@@ -432,7 +428,7 @@ private:
 			master_population.push_back(temp_population);
 
 			// TODO do not clear this, update the population in the worker threads
-			competitors[i]->population.clear();
+			//competitors[i]->population.clear();
 			
 			// The next fitness function master index location is at sum(i=0,i=prev_competitor,fitness_size)
 			// e.g. competitor 2's master index location for the local first value (i = 1, c_fitness[0]) is competitor_1.size()

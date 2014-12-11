@@ -135,6 +135,21 @@ public:
 		//m_cond.notify_all();
 	}
 
+	/** TODO use this function to copy the values into the vector.
+	 * Copies the values from the entries vector into this vector starting at the index offset.
+	 * This will over write any values stored within the range with the new values from the 
+	 * entires vector.
+	 * 
+	 * Fails in the case of offset > this->size() - 1
+	 *
+	 * @param offset The index at which the values will start to be copied from.
+	 * @param entries The elements of the vector will be set to the values of the given vector.
+	 */
+	void copy(unsigned int offset, std::vector<T > &entries) {
+		boost::unique_lock<boost::mutex> lock(mtx_);
+		std::copy(entries.begin(), entries.end(), this->values.begin()+offset);
+	}
+
 };
 
 
