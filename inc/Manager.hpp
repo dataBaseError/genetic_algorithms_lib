@@ -42,6 +42,8 @@ protected:
 	//std::vector<Chromosome<T> > population;
 	SafeVector<Chromosome<T > > master_population;
 
+	std::vector<Result > master_fitness;
+
 	// Need to have some way of ensure no duplication of solutions
 	SafeVector<Chromosome<T> > solutions;
 
@@ -404,8 +406,8 @@ private:
 		//std::cout << "Starting set up of breeding" << std::endl;
 
 		// This should prob. be safe a vector and an attribute of Manager.
-
-		std::vector<Result > master_fitness;
+		master_population.clear();
+		master_fitness.clear();
 		std::vector<Result > c_fitness;
 		std::vector<Chromosome<T > > temp_population;
 		unsigned int offset = 0;
@@ -456,7 +458,7 @@ private:
 		std::vector<Chromosome<T> > new_population;
 
 		//std::cout << "Breeding" << std::endl;
-		//.rw.init(fitness);
+		//rw.init(fitness);
 
 
 		// Iterate through the chromosomes
@@ -466,7 +468,6 @@ private:
 			float selected_operation = op_dist(rand_engine);
 			unsigned int selected_chromosome = rw.next();
 
-			
 			if(selected_operation <= crossover_rate) {
 				// Crossover
 				unsigned int other_selected_chromosome = rw.next();

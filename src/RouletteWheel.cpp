@@ -16,6 +16,10 @@ void RouletteWheel::init(std::vector<Result > &fitness)
 	// Ensure the selection map is empty.
 	selection.clear();
 
+	// Right was not clearing and therefore the range continued to expand (always picked 0 for next).
+	this->right = 0;
+
+	// Is it really necessary for the left to even have a variable (it is always 0).
 	double lower = this->left;
 	double upper = this->right;
 
