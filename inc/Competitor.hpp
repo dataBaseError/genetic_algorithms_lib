@@ -73,6 +73,12 @@ public:
 		return this->population_size;
 	}
 
+	void initPopulation(unsigned int chromosome_size) {
+		std::vector<Chromosome<T > > pop;
+		Chromosome<T >::initPopulation(pop, this->population_size, chromosome_size);
+		this->population.push_back(pop);
+	}
+
 
 };
 

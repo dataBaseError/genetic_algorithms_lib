@@ -27,12 +27,12 @@ void testManager_uint() {
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 10000;
+	unsigned int max_gen = 1000;
 	double mutation_rate = 0.1;
 	double mutation_change_rate = 0.1;
 	double crossover_rate = 0.4;
 
-	unsigned int num_compeditors = 2;
+	unsigned int num_compeditors = 1;
 	unsigned int num_threads = 5;
 
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,

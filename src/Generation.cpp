@@ -1,4 +1,4 @@
-#include "Chromosome.hpp"
+/*#include "Chromosome.hpp"
 
 // List of constants that are required about the problem:
 const int size_of_chromosome = 8;
@@ -19,7 +19,7 @@ const int population_size = 64;
 /*int main(int argc, char *argv[]) {
 
     //const int chromosome_size = (argv[0]);
-}*/
+}/
 
 int process_generation() {
 
@@ -29,4 +29,4 @@ int process_generation() {
         // update mutation rate
     // return results
 	return 0;
-}
+}*/
