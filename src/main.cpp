@@ -20,20 +20,19 @@ bool testChromosomeCreation() {
 }*/
 double calculate(Chromosome<unsigned int> chromosome);
 
-void testManager_uint() {
+/*void testManager_uint() {
 
 	unsigned int pop_size = 50;
 	unsigned int chromo_size = 8;
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 1000;
+	unsigned int max_gen = 10000;
 	double mutation_rate = 0.1;
-	double mutation_change_rate = 0.1;
 	double crossover_rate = 0.4;
 
 	unsigned int num_compeditors = 1;
-	unsigned int num_threads = 5;
+	unsigned int num_threads = 1;
 
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
 				max_value, min_value, mutation_rate, crossover_rate,
@@ -68,11 +67,12 @@ void testManager_uint() {
 		}
 		std::cout << '\n';
 
-	}*/
+	}/
 	manager.run(&calculate);
 
 	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
 
+	std::cout << "Solutions: " << std::endl;
 	for (unsigned int i = 0; i < solutions.size(); i++) {
 		for (unsigned int j = 0; j < chromo_size; j++) {
 			std::cout << solutions[i][j];
@@ -83,6 +83,34 @@ void testManager_uint() {
 		std::cout << '\n';
 
 	}
+}*/
+
+template <class T>
+void measure_performance(std::vector<unsigned int > pop_size, unsigned int chromosome_size,
+	T min_value, T max_value, unsigned int max_gen, std::vector<double > mutation_rate,
+	std::vector<double > crossover_rate, unsigned int num_compeditors, 
+	unsigned int num_threads) {
+
+	Manager<unsigned int > manager(pop_size, chromosome_size, max_gen,
+				max_value, min_value, mutation_rate, crossover_rate,
+				num_compeditors, num_threads);
+
+
+	manager.run(&calculate);
+
+	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
+
+	std::cout << "Solutions: " << solutions.size() << std::endl;
+	/*for (unsigned int i = 0; i < solutions.size(); i++) {
+		for (unsigned int j = 0; j < chromosome_size; j++) {
+			std::cout << solutions[i][j];
+			if(j +1 < chromosome_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}*/
 }
 
 double calculate(Chromosome<unsigned int> chromosome)
@@ -136,7 +164,36 @@ int main(int argc, char **argv) {
 	argc -= (argc > 0);
 	argv += (argc > 0);
 
-	testManager_uint();
+	//testManager_uint();
+
+	unsigned int num_compeditors = 2;
+
+	std::vector<unsigned int > pop_size(num_compeditors);
+	pop_size[0] = 50;
+	pop_size[1] = 60;
+
+
+	//unsigned int pop_size = 50;
+	unsigned int chromo_size = 8;
+	unsigned int min_value = 0;
+	unsigned int max_value = 7;
+	unsigned int max_gen = 10000;
+
+	std::vector<double > mutation_rate(num_compeditors);
+	mutation_rate[0] = 0.1;
+	mutation_rate[1] = 0.9;
+
+	//double mutation_rate = 0.1;
+	std::vector<double > crossover_rate(num_compeditors);
+	crossover_rate[0] = 0.4;
+	crossover_rate[1] = 0.6;
+	//double crossover_rate = 0.4;
+
+	unsigned int num_threads = 5;
+
+	measure_performance<unsigned int>(pop_size, chromo_size,
+	min_value, max_value, max_gen, mutation_rate, crossover_rate, 
+	num_compeditors, num_threads);
 
 	return 0;
 }

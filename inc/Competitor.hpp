@@ -45,6 +45,14 @@ public:
 		return this->population_size;
 	}
 
+	double getMutationRate() {
+		return this->mutation_rate;
+	}
+
+	double getCrossoverRate() {
+		return this->crossover_rate;
+	}
+
 	void initPopulation(unsigned int chromosome_size) {
 		std::vector<Chromosome<T > > pop;
 		Chromosome<T >::initPopulation(pop, this->population_size, chromosome_size);

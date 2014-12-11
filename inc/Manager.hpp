@@ -27,7 +27,6 @@ template <class T>
 class Manager {
 protected:
 
-	unsigned int population_size;
 	unsigned int chromosome_size;
 
 	unsigned int max_generation_number;
@@ -35,11 +34,6 @@ protected:
 	T max_chromosome_value;
 	T min_chromosome_value;
 
-	double mutation_rate;
-
-	double crossover_rate;
-
-	//std::vector<Chromosome<T> > population;
 	SafeVector<Chromosome<T > > master_population;
 
 	std::vector<Result > master_fitness;
@@ -48,9 +42,6 @@ protected:
 	SafeVector<Chromosome<T> > solutions;
 
 	RouletteWheel rw;
-
-	//SafeQueue<unsigned int> safe_queue;
-	//SafeQueue<Result > result_queue;
 
 	boost::thread_group fitness_group;
 
@@ -63,21 +54,14 @@ protected:
 	//unsigned int num_threads_used;
 	unsigned int max_num_threads;
 
-	// Library flags
-	//int number_of_threads = 5;
 	boost::atomic<bool> done;
-	boost::atomic<bool> waiting;
-
-	//boost::condition_variable m_cond;
-	//boost::mutex mtx_;
-
+	
 	unsigned int num_competitor;
 	std::vector<boost::shared_ptr<Competitor<T > > > competitors;
 
 	boost::thread_group competitor_group;
 	boost::barrier wall;
 	boost::barrier whistle;
-	//boost::barrier run_barrier;
 
 	// Fitness function
 	double (*fitness_function)(Chromosome<T>);
@@ -87,29 +71,28 @@ public:
     // Define the barrier to accept 1 per thread per competitor and 1 per competitor and 1 for the master thread
 	/**
 	 * Create a non self-adaptive GA manager
-	 * @param population_size The size of population.
+	 * @param population_sizes The size of population.
 	 * @param chromosome_size The size of each chromosome.
 	 * @param max_chromosome_value The maximum possible value for the chromosome.
 	 * @param min_chromosome_value The minimum possible value for the chromosome.
-	 * @param mutation_rate The mutation rate that is used. This is the likelihood that the
+	 * @param mutation_rates The mutation rate that is used. This is the likelihood that the
 	 * mutation operation is applied. If the self adaptive approach is used then this is
 	 * the initial mutation rate.
-	 * @param crossover_rate The crossover rate, the likelihood that a chromosome
+	 * @param crossover_rates The crossover rate, the likelihood that a chromosome
 	 * has the crossover operation applied to it.
 	 * @param cloning_rate The cloning rate, the likelihood that a chromosome will be
 	 * cloned into the new population.
 	 */
-	Manager(unsigned int population_size, unsigned int chromosome_size, unsigned int max_generation_number,
-				T max_chromosome_value, T min_chromosome_value, double mutation_rate,
-				double crossover_rate, unsigned int num_competitor, unsigned int num_threads) : population_size(population_size),
+	Manager(std::vector<unsigned int > population_sizes, unsigned int chromosome_size, unsigned int max_generation_number,
+				T max_chromosome_value, T min_chromosome_value, std::vector<double > mutation_rates,
+				std::vector<double > crossover_rates, unsigned int num_competitor, unsigned int num_threads) :
 				chromosome_size(chromosome_size), max_generation_number(max_generation_number),
 				max_chromosome_value(max_chromosome_value), min_chromosome_value(min_chromosome_value),
-				mutation_rate(mutation_rate), crossover_rate(crossover_rate), num_competitor(num_competitor), 
-				max_num_threads(num_threads), wall(num_competitor*num_threads + num_competitor + 1),
-				whistle(num_competitor+1) {
+				num_competitor(num_competitor), max_num_threads(num_threads),
+				wall(num_competitor*num_threads + num_competitor + 1), whistle(num_competitor+1) {
 				
 		//population = std::vector<Chromosome<T > >(population_size);
-		initialize(); 
+		initialize(population_sizes, mutation_rates, crossover_rates); 
 
 	}
 
@@ -128,7 +111,7 @@ public:
 			std::cout << "Initial Population " << std::endl;
 			std::vector<Chromosome<T > > initial_pop;
 			competitors[i]->population.getAll(initial_pop);
-			for (unsigned int i = 0; i < population_size; i++) {
+			for (unsigned int i = 0; i < initial_pop.size(); i++) {
 				for (unsigned int j = 0; j < chromosome_size; j++) {
 					std::cout << initial_pop[i][j];
 					if(j +1 < chromosome_size) {
@@ -168,7 +151,7 @@ public:
 			std::cout << "Result Population: " << std::endl;
 			std::vector<Chromosome<T > > final_pop;
 			competitors[i]->population.getAll(final_pop);
-			for (unsigned int i = 0; i < population_size; i++) {
+			for (unsigned int i = 0; i < final_pop.size(); i++) {
 				for (unsigned int j = 0; j < chromosome_size; j++) {
 					std::cout << final_pop[i][j];
 					if(j +1 < chromosome_size) {
@@ -226,7 +209,8 @@ public:
 			// Breed the population
 		
 			// Each worker thread is responsible for replacing their own sub population of their competitor
-			std::vector<Chromosome<T > > sub_population = m->breed(comp->getPopulationSize(), problem_size);
+			std::vector<Chromosome<T > > sub_population = m->breed(comp->getPopulationSize(),
+				comp->getMutationRate(), comp->getCrossoverRate(), problem_size);
 
 			// Join the populations back together.
 			comp->population.copy(start_index, sub_population);
@@ -241,13 +225,6 @@ public:
 		return temp;
 	}
 
-    /**
-	 * Returns the population size specified for the manager class.
-     * @return The population size
-     */
-	unsigned int size() {
-		return this->population_size;
-	}
 
 private:
 
@@ -272,7 +249,8 @@ private:
 	/**
 	 * Setup the necessary variables for genetic algorithm.
 	 */
-	void initialize() {
+	void initialize(std::vector<unsigned int > population_sizes, std::vector<double > mutation_rates, 
+		std::vector<double > crossover_rates) {
 		// Create the random objects that will be used
 		std::random_device rd;
 		rand_engine = std::mt19937(rd());
@@ -289,7 +267,8 @@ private:
 		for(unsigned int j = 0; j < num_competitor; j++) {
 
 			// TODO update this to allow for variations of these three parameters.
-			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_size, mutation_rate, crossover_rate));
+			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_sizes[j],
+				mutation_rates[j], crossover_rates[j]));
 
 			//std::cout << "Adding to vector " << std::endl;
 			competitors.push_back(competitor);
@@ -328,7 +307,7 @@ private:
 	 * Mutate the given chromosome on the likelihood of the mutation rate.
 	 * @param chromosome The chromosome to mutate.
 	 */
-	void mutate(Chromosome<T > &chromosome) {
+	void mutate(Chromosome<T > &chromosome, double mutation_rate) {
 		if(mutation_dist(rand_engine) <= mutation_rate) {
 			chromosome.mutate();
 		}
@@ -453,7 +432,8 @@ private:
 	/**
 	 * Prepare the population for the next generation by apply the genetic operations.
 	 */
-	std::vector<Chromosome<T> > breed(unsigned int population_size, unsigned int problem_size) {
+	std::vector<Chromosome<T> > breed(unsigned int population_size, double mutation_rate,
+		double crossover_rate, unsigned int problem_size) {
 
 		std::vector<Chromosome<T> > new_population;
 
@@ -481,7 +461,7 @@ private:
 				}
 
 				// Mutate the second chromosome in the crossover
-				mutate((*(new_population.end() - 2)));
+				mutate((*(new_population.end() - 2)), mutation_rate);
 
 				// Handle the case where the new_master_population.size() -1 == master_population size and then crossover is selected.
 				if(new_population.size() == problem_size+1) {
@@ -494,7 +474,7 @@ private:
 			}
 
 			// Mutate the chromosome
-			mutate(new_population.back());
+			mutate(new_population.back(), mutation_rate);
 
 		}
 
