@@ -10,6 +10,8 @@
 #include "SafeQueue.hpp"
 #include "SafeVector.hpp"
 
+#include <boost/thread/barrier.hpp>
+
 template <class T>
 class Competitor {
 
@@ -25,6 +27,8 @@ class Competitor {
 	boost::condition_variable m_cond;
 	boost::mutex mtx_;
 
+	boost::barrier breed_wall;
+
 public:
 
 	boost::atomic<bool> done;
@@ -38,9 +42,9 @@ public:
 	// done, waiting, m_cond, population, results_queue, population_size, mutation_rate, crossover_rate
 
 	Competitor(unsigned int population_size, double mutation_rate, double
-		crossover_rate) : population_size(population_size),
+		crossover_rate, unsigned int num_workers) : population_size(population_size),
 		mutation_rate(mutation_rate), crossover_rate(crossover_rate),
-		done(false), waiting(false) {
+		done(false), waiting(false), breed_wall(num_workers) {
 	}
 
 	~Competitor() {
@@ -79,6 +83,9 @@ public:
 		this->population.push_back(pop);
 	}
 
+	void wait() {
+		this->breed_wall.wait();
+	}
 
 };
 

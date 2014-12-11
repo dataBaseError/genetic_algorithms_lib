@@ -203,10 +203,11 @@ public:
 
 			//std::cout << "Starting to work" << std::endl;
 
+			//std::cout << "Population Size = " << comp->population.size() << " range " << start_index << " - " << start_index + problem_size-1 << std::endl;
 			// Can we trust the user to not change the chromosome? No.
 			for(unsigned int i = 0; i < problem_size; i++) {
 
-				std::cout << "Population Size = " << comp->population.size() << std::endl;
+				//std::cout << "Current = " << start_index + i << std::endl;
 				Chromosome<T> t = comp->population.at(start_index+i);
 
 				results.push_back(Result(start_index+i, m->fitness_function(t)));
@@ -232,6 +233,9 @@ public:
 			// Join the populations back together.
 			//std::cout << "sub_population size " << sub_population.size() << std::endl;
 			comp->population.push_back(sub_population);
+
+			// Wait until all other populations have collected together their stuff.
+			comp->wait();
 
 			//std::cout << "Finished breeding" << std::endl;
 		}
@@ -291,11 +295,11 @@ private:
 		for(unsigned int j = 0; j < num_competitor; j++) {
 
 			// TODO update this to allow for variations of these three parameters.
-			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_size, mutation_rate, crossover_rate));
+			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_size, mutation_rate, crossover_rate, max_num_threads));
 
 			//std::cout << "Adding to vector " << std::endl;
 			competitors.push_back(competitor);
-			problem_size = competitor->getPopulationSize()/max_num_threads;
+			problem_size = competitors.back()->getPopulationSize()/max_num_threads;
 			count = 0;
 
 			//std::cout << "Competitor " << j << " initializing" << std::endl;
