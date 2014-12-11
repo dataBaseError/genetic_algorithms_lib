@@ -48,7 +48,7 @@ protected:
 	RouletteWheel rw;
 
 	//SafeQueue<unsigned int> safe_queue;
-	SafeQueue<Result > result_queue;
+	//SafeQueue<Result > result_queue;
 
 	boost::thread_group fitness_group;
 
@@ -58,7 +58,7 @@ protected:
 	//std::uniform_int_distribution<int> chrom_dist;
 
 	// With this we can limit the number of threads used
-	unsigned int num_threads_used;
+	//unsigned int num_threads_used;
 	unsigned int max_num_threads;
 
 	// Library flags
@@ -66,8 +66,8 @@ protected:
 	boost::atomic<bool> done;
 	boost::atomic<bool> waiting;
 
-	boost::condition_variable m_cond;
-	boost::mutex mtx_;
+	//boost::condition_variable m_cond;
+	//boost::mutex mtx_;
 
 	unsigned int num_competitor;
 	std::vector<boost::shared_ptr<Competitor<T > > > competitors;
@@ -157,7 +157,7 @@ public:
 		}
 
 		done = true;
-		m_cond.notify_all();
+		//m_cond.notify_all();
 
 		fitness_group.join_all();
 
@@ -197,11 +197,7 @@ public:
 
 		while(!m->done) {
 
-			//if(comp->wait_for_work()) {
-			//	break;
-			//}
-
-			//std::cout << "Starting to work" << std::endl;
+			// Could have a look up table (cache) of recent solutions but this is most likely a completely alternative idea
 
 			//std::cout << "Population Size = " << comp->population.size() << " range " << start_index << " - " << start_index + problem_size-1 << std::endl;
 			// Can we trust the user to not change the chromosome? No.
@@ -257,7 +253,7 @@ public:
 
 private:
 
-	bool wait_for_work() {
+	/*bool wait_for_work() {
 		boost::unique_lock<boost::mutex> lock(mtx_);
 		if(!done) {
 			if(!waiting) {
@@ -273,7 +269,7 @@ private:
 	void set_waiting(bool val){
 		boost::unique_lock<boost::mutex> guard(mtx_);
 		waiting = val;
-	}
+	}*/
 
 	/**
 	 * Setup the necessary variables for genetic algorithm.
@@ -435,6 +431,7 @@ private:
 			//master_population.push_back(temp_population);
 			master_population.push_back(temp_population);
 
+			// TODO do not clear this, update the population in the worker threads
 			competitors[i]->population.clear();
 			
 			// The next fitness function master index location is at sum(i=0,i=prev_competitor,fitness_size)
