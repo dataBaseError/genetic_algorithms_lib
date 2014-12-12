@@ -125,7 +125,7 @@ public:
 		this->fitness_function = fitness_function;
 		wall.wait();
 
-		for(unsigned int i = 0; i < max_generation_number; i++) {
+		for(unsigned int i = 0; i < max_generation_number && !done; i++) {
 		//for(unsigned int i = 0; i < 1; i++) {
 			//std::cout << "Generation " << i << std::endl;
 
@@ -349,6 +349,7 @@ private:
 						if(results[i].getResult() == 1.0) {
 							//std::cout << "Found Solution" << std::endl;
 							solutions.push_back(comp->population.at(results[i].getIndex()));
+							m->done = true;
 						}
 					}
 
@@ -361,7 +362,7 @@ private:
 			}
 			//std::cout << "Workers all finished" << std::endl;
 
-			// TODO consider removing (since worker threads are also going to do the breeding)
+			// TODO consider removing (since worker threads are also going to do the  breeding)
 			// Set the workers able to wait once they have finished their work
 			//comp->set_waiting(false);
 
