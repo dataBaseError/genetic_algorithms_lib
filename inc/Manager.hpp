@@ -124,7 +124,7 @@ public:
 		}
 		this->fitness_function = fitness_function;
 		wall.wait();
-
+		//
 		for(unsigned int i = 0; i < max_generation_number && !done; i++) {
 		//for(unsigned int i = 0; i < 1; i++) {
 			//std::cout << "Generation " << i << std::endl;
@@ -228,24 +228,6 @@ public:
 
 private:
 
-	/*bool wait_for_work() {
-		boost::unique_lock<boost::mutex> lock(mtx_);
-		if(!done) {
-			if(!waiting) {
-				m_cond.wait(lock);
-			}			
-		}
-		else {
-			return true;
-		}
-		return false;
-	}
-
-	void set_waiting(bool val){
-		boost::unique_lock<boost::mutex> guard(mtx_);
-		waiting = val;
-	}*/
-
 	/**
 	 * Setup the necessary variables for genetic algorithm.
 	 */
@@ -334,6 +316,7 @@ private:
 
 			std::vector<Result > results;
 			std::vector<Chromosome<T > > solutions;
+			//bool quit = false;
 
 			// Main threads will wait for all children to finish executing before proceeding.
 			// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
@@ -349,7 +332,7 @@ private:
 						if(results[i].getResult() == 1.0) {
 							//std::cout << "Found Solution" << std::endl;
 							solutions.push_back(comp->population.at(results[i].getIndex()));
-							m->done = true;
+							//m->done = true;
 						}
 					}
 
@@ -422,7 +405,7 @@ private:
 		rw.init(master_fitness);
 		//std::cout << "Setup breeding waiting for next breeding to finish" << std::endl;
 
-		if(final) {
+		if(final || solutions.size() > 0) {
 			done = true;
 		}
 
