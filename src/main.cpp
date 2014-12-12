@@ -162,9 +162,9 @@ std::vector<T > parseVector(boost::program_options::variables_map vm, std::strin
 	if (!vm[key].empty()) {
 		val = vm[key].as<std::vector<T > >();
 		// good to go
-		for(unsigned int i = 0; i< val.size(); i++) {
-			std::cout << val[i] << std::endl;	
-		}
+		//for(unsigned int i = 0; i< val.size(); i++) {
+		//	std::cout << val[i] << std::endl;	
+		//}
 	}
 	return val;
 }
@@ -198,7 +198,7 @@ int parse_args(int argc, char **argv) {
 	std::vector<double > m_rate = parseVector<double >(vm, "m_rate");
 	std::vector<double > c_rate = parseVector<double >(vm, "c_rate");
 
-	if(num_competitors > 0 && pop_size.size() == num_competitors && pop_size.size() == m_rate.size() && pop_size.size() == c_rate.size()) {
+	if(num_competitors <= 0 && pop_size.size() == num_competitors && pop_size.size() == m_rate.size() && pop_size.size() == c_rate.size()) {
 		std::cout << "Invalid Input" << std::endl;
 		return -1;
 	}
