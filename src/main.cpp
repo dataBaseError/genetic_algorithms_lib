@@ -170,23 +170,23 @@ int main(int argc, char **argv) {
 
 	std::vector<unsigned int > pop_size(num_compeditors);
 	pop_size[0] = 50;
-	pop_size[1] = 60;
+	//pop_size[1] = 60;
 
 
 	//unsigned int pop_size = 50;
 	unsigned int chromo_size = 8;
 	unsigned int min_value = 0;
-	unsigned int max_value = 7;
+	unsigned int max_value = chromo_size-1;
 	unsigned int max_gen = 10000;
 
 	std::vector<double > mutation_rate(num_compeditors);
 	mutation_rate[0] = 0.1;
-	mutation_rate[1] = 0.9;
+	//mutation_rate[1] = 0.9;
 
 	//double mutation_rate = 0.1;
 	std::vector<double > crossover_rate(num_compeditors);
 	crossover_rate[0] = 0.4;
-	crossover_rate[1] = 0.6;
+	//crossover_rate[1] = 0.6;
 	//double crossover_rate = 0.4;
 
 	unsigned int num_threads = 5;

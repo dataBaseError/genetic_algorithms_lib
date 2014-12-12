@@ -309,14 +309,11 @@ private:
 		while(!m->done) {
 
 			//std::cout << "Tell workers to start" << std::endl;
-			//comp->set_waiting(true);
-			//comp->start_working();
 
 			comp->fitness_results.clear();
 
 			std::vector<Result > results;
 			std::vector<Chromosome<T > > solutions;
-			//bool quit = false;
 
 			// Main threads will wait for all children to finish executing before proceeding.
 			// Construct the list of results for the fitness function in a map which maps the chromosome's index to the chromosome's fitness value.
