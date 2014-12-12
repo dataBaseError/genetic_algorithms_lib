@@ -20,11 +20,11 @@ class Competitor {
 
 	double crossover_rate;
 
-	boost::atomic<bool> waiting;
+	//boost::atomic<bool> waiting;
 
 public:
 
-	boost::atomic<bool> done;
+	//boost::atomic<bool> done;
 	SafeVector<Chromosome<T > > population;
 	SafeQueue<Result > result_queue;
 
@@ -33,8 +33,7 @@ public:
 
 	Competitor(unsigned int population_size, double mutation_rate, double
 		crossover_rate) : population_size(population_size),
-		mutation_rate(mutation_rate), crossover_rate(crossover_rate),
-		done(false), waiting(false) {
+		mutation_rate(mutation_rate), crossover_rate(crossover_rate) {
 	}
 
 	~Competitor() {
