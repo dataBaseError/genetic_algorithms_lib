@@ -103,11 +103,13 @@ public:
     /**
 	 * Run the algorithm for the specified number of generations
 	 */	
-	void run(double (*fitness_function)(Chromosome<T>)) {
+	unsigned int run(double (*fitness_function)(Chromosome<T>)) {
+
 
 		for(unsigned int i = 0; i < num_competitor; i++) {
 			competitors[i]->initPopulation(this->chromosome_size);
 
+			/*
 			std::cout << "Initial Population " << std::endl;
 			std::vector<Chromosome<T > > initial_pop;
 			competitors[i]->population.getAll(initial_pop);
@@ -120,12 +122,12 @@ public:
 				}
 				std::cout << '\n';
 
-			}
+			}*/
 		}
 		this->fitness_function = fitness_function;
 		wall.wait();
-		//
-		for(unsigned int i = 0; i < max_generation_number && !done; i++) {
+		unsigned int i;
+		for(i = 0; i < max_generation_number && !done; i++) {
 		//for(unsigned int i = 0; i < 1; i++) {
 			//std::cout << "Generation " << i << std::endl;
 
@@ -146,6 +148,7 @@ public:
 
 		fitness_group.join_all();
 
+		/*
 		for(unsigned int i = 0; i < num_competitor; i++) {
 
 			std::cout << "Result Population: " << std::endl;
@@ -161,8 +164,8 @@ public:
 				std::cout << '\n';
 
 			}
-		}
-		
+		}*/
+		return i;
 	}
 
 	/**
