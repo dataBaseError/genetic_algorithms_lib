@@ -9,6 +9,8 @@ m_rates=("0.1" "0.1 0.5" "0.1 0.5 0.9")
 c_rates=("0.4" "0.4 0.6" "0.4 0.6 0.8")
 
 # Run 8 queens with 1 competitor
+mkdir -p log/
+out_file=output\_$(date +"%m%d%Y_%H%M").csv
 
 for g in ${generations[@]}
 do
@@ -19,10 +21,11 @@ do
 	do	
 	    for t in ${threads[@]}
 	    do
-		for run_num in ${num_runs[@]}
-		do
+		#for run_n in ${num_runs}
+		for (( run_n = 0; run_n <= ${num_runs}; run_n++ )); do
+    		
 
-		    row=${run_num}, ${q}, ${g}, ${c}, ${t}
+		    row="${run_n}, ${q}, ${g}, ${c}, ${t}"
 		    current=`expr ${c} - 1`
 
 		    result=`(time bin/GALibrary --c ${c} --t ${t} --n ${q} --gen ${g} --pop_size ${pop_sizes[${current}]} --m_rate ${m_rates[${current}]} --c_rate ${c_rates[${current}]}) 2>&1`
@@ -31,10 +34,13 @@ do
 		    # all we need to do is create a csv of the time script results
 		    # bin/GALibrary already outputs a csv bool (found a solution), number (number of gen. executed)
 		    # need to also incorperate the variables defined above (e.g. $q, $g, $c, $t)
-		    echo "${result}"
+		    #echo "${result}"
 
-		    row =${row}`echo ${result} | grep '[01],\s[0-9][0-9]*' -o`
+		    row="${row}, `echo ${result} | grep '[01],\s[0-9][0-9]*' -o`"
+		    row="${row}, `echo ${result} | grep 'real\s[0-9][0-9]*m[0-9][0-9]*\.[0-9][0-9][0-9]s' -o | grep '[0-9][0-9]*m[0-9][0-9]*\.[0-9][0-9][0-9]' -o`"
+		    echo ${row} >> log/${out_file}
 		    #[01],[0-9]+ real [0-9]+m[0-9]+\.[0-9][0-9][0-9]s user [0-9]+m[0-9]+\.[0-9][0-9][0-9]s sys [0-9]+m[0-9]+\.[0-9][0-9][0-9]s 
+		done
 	    done
 	done
     done
