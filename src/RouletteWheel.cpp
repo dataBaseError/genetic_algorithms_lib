@@ -11,25 +11,36 @@ RouletteWheel::~RouletteWheel() {
 
 }
 
-void RouletteWheel::init(std::vector<std::pair<unsigned int, double> > &fitness)
+void RouletteWheel::init(std::vector<Result > &fitness)
 {
+	// Ensure the selection map is empty.
+	selection.clear();
+
+	// Right was not clearing and therefore the range continued to expand (always picked 0 for next).
+	this->right = 0;
+
+	// Is it really necessary for the left to even have a variable (it is always 0).
 	double lower = this->left;
 	double upper = this->right;
 
 	// Calculate the right bound
 	for (auto it = fitness.begin(); it != fitness.end(); ++it)
 	{
-		this->right += it->second + this->EPSILON;
+		this->right += it->getResult() + this->EPSILON;
 	}
 
 	// Initialize the uniform distribution random generator
 	this->distribution = std::uniform_real_distribution<double>(this->left, this->right);
 
 	// Add each chromosome and interval to roulette wheel selection
+
+	// TODO consider using a sorted map, when iterated through will go from largest to smallest
+	// fitness (since the roulette wheel is most likely going to hit the large values and thus
+	// save time in the look through)
 	for (auto it = fitness.begin(); it != fitness.end(); ++it)
 	{
-		upper = lower + it->second;
-		this->selection.insert({std::make_pair(lower, upper), it->first});
+		upper = lower + it->getResult();
+		this->selection.insert({std::make_pair(lower, upper), it->getIndex()});
 		lower = upper + this->EPSILON;
 	}
 }

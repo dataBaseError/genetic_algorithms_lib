@@ -2,9 +2,11 @@
 #include <cassert>
 #include <iostream>     // std::cout
 #include <algorithm>    // std::swap_ranges
+#include <string>
+
 #include <boost/thread/thread.hpp>
-#include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
+#include "boost/program_options.hpp"
 
 #include "Chromosome.hpp"
 #include "Manager.hpp"
@@ -18,274 +20,27 @@ bool testChromosomeCreation() {
 	std::cout << "Passed" << std::endl;
 	return true;
 }*/
-std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome);
+double calculate(Chromosome<unsigned int> chromosome);
 
-/**
- * Test create chromosome of type int
- */
-void testChromosomeCreation_uint() {
-
-	unsigned int chromo_size = 8;
-	unsigned int min_value = 0;
-	unsigned int max_value = 7;
-	std::vector<Chromosome<unsigned int> > children;
-	std::vector<unsigned int> rand_chrom = {2,5,6,1,3,5,4,2};
-
-	// Uses the default constructor to make all the ints.
-	Chromosome<unsigned int> chromosome(chromo_size); // Creates {0,0,0,0,0,0,0,0,0,0}
-	Chromosome<unsigned int> chromosome2(rand_chrom);
-	Chromosome<unsigned int>::initialize(chromo_size, min_value, max_value);
-    chromosome.cloning(children);
-
-	// Check that the child is actually in the children
-	assert(children.size() == 1);
-	std::cout << "Passed child size increased" << std::endl;
-
-	// Check that the clone is equal to the parent
-	assert(chromosome == children[0]);
-	std::cout << "Passed parent equal to clone" << std::endl;
-
-    chromosome.cloning(children);
-	children.back().mutate();
-
-	// Check that the child is actually in the children
-	assert(children.size() == 2);
-	std::cout << "Passed child size increased" << std::endl;
-
-	// Check that the mutant is equal to the parent
-	if(chromosome != children[1]) {
-		std::cout << "Passed parent not equal to mutant" << std::endl;
-	} else {
-		// Note this does not necessary mean the mutate function isnt working.
-		// (since it will pick a random number within the range, it my pick the same number and still be accurate).
-		std::cout << "Failed parent equal to mutant" << std::endl;
-	}
-	for (unsigned int i = 0; i < 8; i++) {
-		std::cout << children[1][i];
-		if(i +1 < 8) {
-			std::cout << ",";
-		}
-	}
-	std::cout << '\n';
-
-	chromosome.crossover(chromosome2, children);
-
-	// Check that the child is actually in the children
-	assert(children.size() == 4);
-	std::cout << "Passed child size increased" << std::endl;
-
-	// Check that the crossover1 is equal to the parent
-	assert(chromosome != children[2]);
-	std::cout << "Passed parent not equal to crossover1" << std::endl;
-
-	for (unsigned int i = 0; i < 8; i++) {
-		std::cout << children[2][i];
-		if(i +1 < 8) {
-			std::cout << ",";
-		}
-
-	}
-	std::cout << '\n';
-
-	for (unsigned int i = 0; i < 8; i++) {
-		std::cout << children[3][i];
-		if(i +1 < 8) {
-			std::cout << ",";
-		}
-	}
-	std::cout << '\n';
-	// Check that the crossover2 is equal to the parent
-	assert(chromosome != children[3]);
-	std::cout << "Passed parent not equal to crossover2" << std::endl;
-
-	unsigned int pop_size = 10;
-	std::vector<Chromosome<int> > population;
-	Chromosome<int>::initialize(chromo_size, min_value, max_value);
-	Chromosome<int>::initPopulation(population, pop_size, chromo_size);
-
-	// Check that the population is initialized to the correct size.
-	assert(population.size() == pop_size);
-
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << population[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	std::cout << "All Chromosome<int> Tests Passed" << std::endl;
-
-}
-
-void testSelection_uint() {
-	unsigned int pop_size = 10;
-	unsigned int chromo_size = 8;
-	unsigned int min_value = 0;
-	unsigned int max_value = 7;
-
-	unsigned int max_gen = 100;
-	bool use_self_adaptive = false;
-	double mutation_rate = 0.1;
-	double mutation_change_rate = 0.1;
-	double similarity_index = 0.1;
-	double crossover_rate = 0.4;
-	//double cloning_rate = 0.5;
-
-	unsigned int num_threads = 1;
-
-	// Create a test population of 10
-	std::vector<Chromosome<unsigned int> > pop(pop_size);
-
-	// Init the chromosome operations
-	Chromosome<unsigned int>::initialize(chromo_size, min_value, max_value);
-	// Create a random chromosome population
-	Chromosome<unsigned int>::initPopulation(pop, pop_size, chromo_size);
-
-	std::cout << "Init pop = " << std::endl;
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << pop[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	std::vector<std::pair<unsigned int, double> > fitness(pop_size);
-
-	// Create a set of fitness values
-	std::vector<double > fitness_values = { 0.1, 0.4, 0.2, 0.6, 0.7, 0.8, 0.5, 0.75, 0.92, 0.8 };
-
-	for(unsigned int i = 0; i < fitness.size(); i++) {
-		fitness[i] = std::pair<unsigned int, double>(i, fitness_values[i]);
-	}
-
-	RouletteWheel rw;
-
-	rw.init(fitness);
-
-	unsigned int count = 0;
-	while (count < pop_size) {
-		Chromosome<unsigned int> cur = pop[rw.next()];
-		std::cout << "Next Chromosome = ";
-		for (unsigned int i = 0; i < chromo_size; i++) {
-			std::cout << cur[i];
-			if (i+1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << std::endl;
-		count++;
-	}
-
-	// TODO test Manager::breed
-	Manager<unsigned int> manager(pop_size, chromo_size, max_gen,
-					max_value, min_value, use_self_adaptive,
-					mutation_rate, mutation_change_rate, similarity_index,
-					crossover_rate, num_threads);
-
-	manager.initPopulation();
-
-	std::cout << "Init the chromosomes" << std::endl;
-
-	std::vector<Chromosome<unsigned int > > init_pop = manager.getPopulation();
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << init_pop[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	manager.breed(fitness);
-
-	std::cout << "Breed the chromosomes" << std::endl;
-
-	std::vector<Chromosome<unsigned int> > breed_pop = manager.getPopulation();
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << breed_pop[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	std::vector<unsigned int> regTwo = {0,2,4,6,1,3,5,7}; // Not solution (1 collisions)
-	// solution {7,3,0,2,5,1,6,4};
-	std::vector<unsigned int> regOne = {10,11,12,13,14,15,16,17};
-	Chromosome<unsigned int> first(regOne);
-	Chromosome<unsigned int> second(regTwo);
-	std::vector<Chromosome<unsigned int> >child;
-
-	first.crossover(second, child);
-
-	std::cout << "CHROMOSOME CROSSOVER" << std::endl;
-	for (unsigned int j = 0; j < chromo_size; j++) {
-		std::cout << first[j];
-		if(j +1 < chromo_size) {
-			std::cout << ",";
-		}
-	}
-	std::cout << '\n';
-
-	for (unsigned int j = 0; j < chromo_size; j++) {
-		std::cout << second[j];
-		if(j +1 < chromo_size) {
-			std::cout << ",";
-		}
-	}
-	std::cout << '\n';
-
-	std::cout << "RESULT" << std::endl;
-
-	for (unsigned int i = 0; i < 2; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << child[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	//std::cout << "Fitness for regTwo = " << calculate(regTwo) << std::endl;
-}
-
-void testManager_uint() {
+/*void testManager_uint() {
 
 	unsigned int pop_size = 50;
 	unsigned int chromo_size = 8;
 	unsigned int min_value = 0;
 	unsigned int max_value = 7;
 
-	unsigned int max_gen = 100;
-	bool use_self_adaptive = false;
+	unsigned int max_gen = 10000;
 	double mutation_rate = 0.1;
-	double mutation_change_rate = 0.1;
-	double similarity_index = 0.1;
 	double crossover_rate = 0.4;
 
-	unsigned int num_threads = 10;
+	unsigned int num_compeditors = 1;
+	unsigned int num_threads = 1;
 
 	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
-				max_value, min_value, use_self_adaptive,
-				mutation_rate, mutation_change_rate, similarity_index,
-				crossover_rate, num_threads);
+				max_value, min_value, mutation_rate, crossover_rate,
+				num_compeditors, num_threads);
 
-	manager.initPopulation();
+	/*manager.initPopulation();
 
 	std::cout << "Initial Population " << std::endl;
 	std::vector<Chromosome<unsigned int> > initial_pop = manager.getPopulation();
@@ -301,7 +56,7 @@ void testManager_uint() {
 	}
 
 	//test Manager::run after calling for a single generation
-	manager.run(&calculate);
+	
 
 	std::cout << "Result Population: " << std::endl;
 	std::vector<Chromosome<unsigned int> > final_pop = manager.getPopulation();
@@ -314,10 +69,62 @@ void testManager_uint() {
 		}
 		std::cout << '\n';
 
+	}/
+	manager.run(&calculate);
+
+	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
+
+	std::cout << "Solutions: " << std::endl;
+	for (unsigned int i = 0; i < solutions.size(); i++) {
+		for (unsigned int j = 0; j < chromo_size; j++) {
+			std::cout << solutions[i][j];
+			if(j +1 < chromo_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
 	}
+}*/
+
+template <class T>
+int measure_performance(std::vector<unsigned int > pop_size, unsigned int chromosome_size,
+	T min_value, T max_value, unsigned int max_gen, std::vector<double > mutation_rate,
+	std::vector<double > crossover_rate, unsigned int num_compeditors, 
+	unsigned int num_threads) {
+
+	Manager<unsigned int > manager(pop_size, chromosome_size, max_gen,
+				max_value, min_value, mutation_rate, crossover_rate,
+				num_compeditors, num_threads);
+
+
+	unsigned int num_gen = manager.run(&calculate);
+
+	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
+
+	if(solutions.size() > 0) {
+		std::cout << "1";
+	}
+	else {
+		std::cout << "0";
+	}
+
+	std::cout << ", " << num_gen;
+	return 0;
+	/*std::cout << "Solutions: " << std::endl;
+	for (unsigned int i = 0; i < solutions.size(); i++) {
+		for (unsigned int j = 0; j < chromosome_size; j++) {
+			std::cout << solutions[i][j];
+			if(j +1 < chromosome_size) {
+				std::cout << ",";
+			}
+		}
+		std::cout << '\n';
+
+	}*/
 }
 
-std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome)
+double calculate(Chromosome<unsigned int> chromosome)
 {
 	unsigned int numCollisions = 0;
 
@@ -354,29 +161,66 @@ std::pair<double, bool> calculate(Chromosome<unsigned int> chromosome)
 	// This might be best done in a
 	double result = 1.0 / numCollisions;
 
-	return std::pair<double, bool >(result, result == 1);
+	return result;//, result == 1);
+}
+
+template <class T> 
+std::vector<T > parseVector(boost::program_options::variables_map vm, std::string key) {
+
+	std::vector<T > val;
+	if (!vm[key].empty()) {
+		val = vm[key].as<std::vector<T > >();
+		// good to go
+		//for(unsigned int i = 0; i< val.size(); i++) {
+		//	std::cout << val[i] << std::endl;	
+		//}
+	}
+	return val;
+}
+
+// Command line interface
+// e.g. ../bin/GALibrary --c 1 --t 1 --n 8 --gen 1000 --pop_size 50 60 --m_rate 0.1 0.9 --c_rate 0.4 0.6
+
+int parse_args(int argc, char **argv) {
+
+	namespace po = boost::program_options; 
+	po::options_description desc("Allowed options");
+	desc.add_options()
+		("c", po::value<unsigned int >(), "set the number of competitors")
+		("t", po::value<unsigned int >(), "set the number of worker threads for each competitor")
+		("n", po::value<unsigned int >(), "the number of queens")
+		("gen", po::value<unsigned int >(), "the maximum number of generations")
+		("pop_size", po::value<std::vector<unsigned int > >()->multitoken(), "The population values for each competitor")
+		("m_rate", po::value<std::vector<double > >()->multitoken(), "The mutation rate for each competitor")
+		("c_rate", po::value<std::vector<double > >()->multitoken(), "The crossover rate for each competitor");
+
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc, argv, desc), vm);
+	po::notify(vm);
+
+	unsigned int num_competitors = vm["c"].as<unsigned int >();
+	unsigned int num_threads = vm["t"].as<unsigned int >();
+	unsigned int chromo_size = vm["n"].as<unsigned int >();
+	unsigned int max_gen = vm["gen"].as<unsigned int >();
+
+	std::vector<unsigned int> pop_size = parseVector<unsigned int >(vm, "pop_size");
+	std::vector<double > m_rate = parseVector<double >(vm, "m_rate");
+	std::vector<double > c_rate = parseVector<double >(vm, "c_rate");
+
+	if(num_competitors <= 0 && pop_size.size() == num_competitors && pop_size.size() == m_rate.size() && pop_size.size() == c_rate.size()) {
+		std::cout << "Invalid Input" << std::endl;
+		return -1;
+	}
+
+	// TODO fix for actual cmd
+	unsigned int max_value = chromo_size -1;
+	unsigned int min_value = 0;
+	return measure_performance<unsigned int>(pop_size, chromo_size,
+		min_value, max_value, max_gen, m_rate, c_rate, 
+		num_competitors, num_threads);
 }
 
 int main(int argc, char **argv) {
 
-    // EXAMPLES
-    boost::atomic_int producer_count(0);
-    boost::thread t(&testChromosomeCreation_uint);
-    boost::lockfree::queue<int> queue(128);
-
-    //Skip program name if any
-	argc -= (argc > 0);
-	argv += (argc > 0);
-
-	testChromosomeCreation_uint();
-
-	std::cout << std::endl;
-
-	testSelection_uint();
-
-	std::cout << std::endl;
-
-	testManager_uint();
-
-	return 0;
+	return parse_args(argc, argv);
 }
