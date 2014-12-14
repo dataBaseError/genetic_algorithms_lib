@@ -1,3 +1,4 @@
+"trial","queens","maxgen","competitors","threads","solved","generations","time"
 0, 8, 100, 1, 1, 0, 100, 0.022
 1, 8, 100, 1, 1, 0, 100, 0.023
 2, 8, 100, 1, 1, 0, 100, 0.024
