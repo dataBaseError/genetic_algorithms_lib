@@ -1,3 +1,27 @@
+/**
+ *  The MIT License (MIT)
+ *
+ * Copyright (c) 2014  Joseph Heron, Jonathan Gillett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <cstdio>
 #include <cassert>
 #include <iostream>     // std::cout
@@ -11,81 +35,7 @@
 #include "Chromosome.hpp"
 #include "Manager.hpp"
 
-/*
-bool testChromosomeCreation() {
-
-	Chromosome<int > population(100);
-	population.set(0, 100);
-	assert(population[0] == 100);
-	std::cout << "Passed" << std::endl;
-	return true;
-}*/
 double calculate(Chromosome<unsigned int> chromosome);
-
-/*void testManager_uint() {
-
-	unsigned int pop_size = 50;
-	unsigned int chromo_size = 8;
-	unsigned int min_value = 0;
-	unsigned int max_value = 7;
-
-	unsigned int max_gen = 10000;
-	double mutation_rate = 0.1;
-	double crossover_rate = 0.4;
-
-	unsigned int num_compeditors = 1;
-	unsigned int num_threads = 1;
-
-	Manager<unsigned int > manager(pop_size, chromo_size, max_gen,
-				max_value, min_value, mutation_rate, crossover_rate,
-				num_compeditors, num_threads);
-
-	/*manager.initPopulation();
-
-	std::cout << "Initial Population " << std::endl;
-	std::vector<Chromosome<unsigned int> > initial_pop = manager.getPopulation();
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << initial_pop[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-
-	//test Manager::run after calling for a single generation
-	
-
-	std::cout << "Result Population: " << std::endl;
-	std::vector<Chromosome<unsigned int> > final_pop = manager.getPopulation();
-	for (unsigned int i = 0; i < pop_size; i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << final_pop[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}/
-	manager.run(&calculate);
-
-	std::vector<Chromosome<unsigned int> > solutions = manager.getSolutions();
-
-	std::cout << "Solutions: " << std::endl;
-	for (unsigned int i = 0; i < solutions.size(); i++) {
-		for (unsigned int j = 0; j < chromo_size; j++) {
-			std::cout << solutions[i][j];
-			if(j +1 < chromo_size) {
-				std::cout << ",";
-			}
-		}
-		std::cout << '\n';
-
-	}
-}*/
 
 template <class T>
 int measure_performance(std::vector<unsigned int > pop_size, unsigned int chromosome_size,
@@ -157,7 +107,6 @@ double calculate(Chromosome<unsigned int> chromosome)
 		numCollisions= 1;
 	}
 
-	// TODO search for results
 	// This might be best done in a
 	double result = 1.0 / numCollisions;
 
@@ -170,17 +119,12 @@ std::vector<T > parseVector(boost::program_options::variables_map vm, std::strin
 	std::vector<T > val;
 	if (!vm[key].empty()) {
 		val = vm[key].as<std::vector<T > >();
-		// good to go
-		//for(unsigned int i = 0; i< val.size(); i++) {
-		//	std::cout << val[i] << std::endl;	
-		//}
 	}
 	return val;
 }
 
 // Command line interface
 // e.g. ../bin/GALibrary --c 1 --t 1 --n 8 --gen 1000 --pop_size 50 60 --m_rate 0.1 0.9 --c_rate 0.4 0.6
-
 int parse_args(int argc, char **argv) {
 
 	namespace po = boost::program_options; 
@@ -212,7 +156,6 @@ int parse_args(int argc, char **argv) {
 		return -1;
 	}
 
-	// TODO fix for actual cmd
 	unsigned int max_value = chromo_size -1;
 	unsigned int min_value = 0;
 	return measure_performance<unsigned int>(pop_size, chromo_size,

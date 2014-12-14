@@ -1,40 +1,46 @@
+/**
+ *  The MIT License (MIT)
+ *
+ * Copyright (c) 2014  Joseph Heron, Jonathan Gillett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef SAFE_VECTOR_HPP_
 #define SAFE_VECTOR_HPP_
 
 #include <vector>
-//#include <boost/thread/condition_variable.hpp>
-
-//#include <pthread.h>
-//#include <semaphore.h>
 
 template <typename T >
 class SafeVector {
 
 private:
 	std::vector<T > values;
-	//boost::condition_variable m_cond;       // The condition to wait for
 	boost::mutex mtx_;
-	//pthread_mutex_t access_lock;
-	//sem_t access_resource;
-	bool stop_waiting;
-	//pthread_cond_t empty_wait;
 
 public:
 
-	SafeVector()// : sem_(0)
+	SafeVector()
 	{
-		//pthread_mutex_init(&access_lock, NULL);
-		//sem_init(&access_resource, 0, 0);
-		stop_waiting = false;
-		//pthread_cond_init(&empty_wait, 0);
-		//pthread_cond_signal(&self_adapt_wait);
 	}
 
 	~SafeVector() {
-		//pthread_mutex_destroy(&access_lock);
-		//sem_destroy(&access_resource);
-		//pthread_cond_destroy(&empty_wait);
 	}
 
 	bool empty() {
@@ -52,26 +58,6 @@ public:
 		return values.size();
 	}
 	
-
-	/* Didnt really need this
-	typename std::queue<T >::size_type size() const {
-		pthread_mutex_lock(&access_lock);
-		auto s = values.size();
-		pthread_mutex_unlock(&access_lock);
-		return s;
-	}*/
-
-	/*
-	T waitToPop() {
-		boost::unique_lock<boost::mutex> guard(mtx_);
-		//sem_wait(&access_resource);
-		//if(stop_waiting) {
-		//	return T ();
-		//}
-		//TODO add in exit conidtion
-		return pop();
-	}*/
-
 	void at(unsigned int index, T &result) {
 		boost::unique_lock<boost::mutex> lock(mtx_);
 		result = values[index];
@@ -87,7 +73,6 @@ public:
 	// the over kill of locking each access (lock once and then access as many as possible)
 	void getAll(std::vector<T > &result) {
 
-		//boost::unique_lock<boost::mutex> lock(mtx_);
 		result = values;
 	}
 
@@ -117,22 +102,6 @@ public:
 		boost::unique_lock<boost::mutex> guard(mtx_);
 
 		values.insert(values.end(), entries.begin(), entries.end());
-
-		/*for(unsigned int i = 0; i < entries.size(); i++) {
-			values.push_back(entries[i]);
-		}*/
-	}
-
-	/**
-	 * Notify all waiting threads to wake up and return false. This method
-	 * essentially is a nice way of stopping the threads that are waiting for
-	 * pop.
-	 */
-	void finish() {
-		
-		boost::unique_lock<boost::mutex> lock(mtx_);
-		this->stop_waiting = true;
-		//m_cond.notify_all();
 	}
 
 	/** TODO use this function to copy the values into the vector.

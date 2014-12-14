@@ -1,8 +1,29 @@
+/**
+ *  The MIT License (MIT)
+ *
+ * Copyright (c) 2014  Joseph Heron, Jonathan Gillett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef MANAGER_HPP_
 #define MANAGER_HPP_
-
-#include <iostream>
 
 #include <vector>			 // vector
 #include <random>            // mt19937, uniform_int_distribution, random_device
@@ -10,7 +31,6 @@
 #include <utility>			 // make_pair
 
 #include <boost/thread/thread.hpp>
-//#include <boost/lockfree/queue.hpp>
 #include <boost/thread/barrier.hpp>
 #include <boost/atomic.hpp>
 #include <boost/shared_ptr.hpp>
@@ -48,10 +68,7 @@ protected:
 	std::mt19937 rand_engine;
 	std::uniform_real_distribution<float> op_dist;
 	std::uniform_real_distribution<float> mutation_dist;
-	//std::uniform_int_distribution<int> chrom_dist;
 
-	// With this we can limit the number of threads used
-	//unsigned int num_threads_used;
 	unsigned int max_num_threads;
 
 	boost::atomic<bool> done;
@@ -67,8 +84,6 @@ protected:
 	double (*fitness_function)(Chromosome<T>);
 public:
 
-    // TODO this should take a configuration struct/object that has a lot of default parameters
-    // Define the barrier to accept 1 per thread per competitor and 1 per competitor and 1 for the master thread
 	/**
 	 * Create a non self-adaptive GA manager
 	 * @param population_sizes The size of population.
@@ -91,7 +106,6 @@ public:
 				num_competitor(num_competitor), max_num_threads(num_threads),
 				wall(num_competitor*num_threads + num_competitor + 1), whistle(num_competitor+1) {
 				
-		//population = std::vector<Chromosome<T > >(population_size);
 		initialize(population_sizes, mutation_rates, crossover_rates); 
 
 	}
@@ -144,7 +158,6 @@ public:
 		}
 
 		done = true;
-		//m_cond.notify_all();
 
 		fitness_group.join_all();
 
@@ -187,7 +200,6 @@ public:
 
 			// Could have a look up table (cache) of recent solutions but this is most likely a completely alternative idea
 
-			//std::cout << "Population Size = " << comp->population.size() << " range " << start_index << " - " << start_index + problem_size-1 << std::endl;
 			// Can we trust the user to not change the chromosome? No.
 			for(unsigned int i = 0; i < problem_size; i++) {
 
@@ -202,12 +214,8 @@ public:
 
 			results.clear();
 
-			//std::cout << "Finished working!" << std::endl;
-
 			// Wait for all the threads to complete their fitness functions
 			m->wall.wait();
-
-			//std::cout << "Starting breeding" << std::endl;
 
 			// Breed the population
 		
@@ -217,8 +225,6 @@ public:
 
 			// Join the populations back together.
 			comp->population.copy(start_index, sub_population);
-
-			//std::cout << "Finished breeding" << std::endl;
 		}
 	}
 
@@ -244,23 +250,17 @@ private:
 		Chromosome<T>::initialize(chromosome_size, min_chromosome_value, max_chromosome_value);
 		done = false;
 
-		//std::cout << "Initializing" << std::endl;
-
 		int problem_size;
 		int count;
 
 		for(unsigned int j = 0; j < num_competitor; j++) {
 
-			// TODO update this to allow for variations of these three parameters.
 			boost::shared_ptr<Competitor<T > > competitor(new Competitor<T >(population_sizes[j],
 				mutation_rates[j], crossover_rates[j]));
 
-			//std::cout << "Adding to vector " << std::endl;
 			competitors.push_back(competitor);
 			problem_size = competitors.back()->getPopulationSize()/max_num_threads;
 			count = 0;
-
-			//std::cout << "Competitor " << j << " initializing" << std::endl;
 
 			// Create the number of threads requested. If we are using self adaptive we will require 1 thread for the self adaptive
 			for(unsigned int i = 0; i < max_num_threads; i++) {
@@ -273,19 +273,12 @@ private:
 					problem_size = competitors.back()->getPopulationSize() % max_num_threads;
 				}
 
-				//std::cout << "Thread number " << i << std::endl;
-
-				//pthread_create(&threadpool.back(), 0, calcFitnessFunction, (void *) this);
 				fitness_group.create_thread(boost::bind(calcFitnessFunction, this, competitors.back(), count, problem_size));
 				count+= problem_size;
 			}
 
-			//std::cout << "competitors " << j << " starting" << std::endl;
-
 			competitor_group.create_thread(boost::bind(runGeneration, this, competitors.back()));
 		}
-
-		//std::cout << "Finished initializing" << std::endl;
 	}
 
 	/**
@@ -305,8 +298,6 @@ private:
 	static void runGeneration(Manager *m, boost::shared_ptr<Competitor<T > > comp) {
 
 		// Get run generation to wait until run() is called
-		//m->whistle.wait();
-
 		m->wall.wait();
 
 		while(!m->done) {
@@ -328,11 +319,8 @@ private:
 
 					for(unsigned int i = 0; i < results.size(); i++) {
 						// Store the solutions locally 
-						//std::cout << "Checking for solutions " << results[i].getResult() << std::endl;
 						if(results[i].getResult() == 1.0) {
-							//std::cout << "Found Solution" << std::endl;
 							solutions.push_back(comp->population.at(results[i].getIndex()));
-							//m->done = true;
 						}
 					}
 
@@ -343,11 +331,6 @@ private:
 					solutions.clear();
 				}
 			}
-			//std::cout << "Workers all finished" << std::endl;
-
-			// TODO consider removing (since worker threads are also going to do the  breeding)
-			// Set the workers able to wait once they have finished their work
-			//comp->set_waiting(false);
 
 			// Wait for the other competitors to finish mutating
 			m->whistle.wait();
@@ -355,18 +338,12 @@ private:
 			// Wait for the referee to set up the next generation
 			m->wall.wait();
 		}
-				
-		//breed(fitness_results); referee
 	}
 
 	void referee(bool final=false) {
 
-		//std::cout << "Waiting for fitness eval" << std::endl;
-
 		// Wait for the competitor threads to signal that their populations are ready.
 		whistle.wait();
-
-		//std::cout << "Starting set up of breeding" << std::endl;
 
 		// This should prob. be safe a vector and an attribute of Manager.
 		master_population.clear();
@@ -392,9 +369,6 @@ private:
 			//master_population.push_back(temp_population);
 			master_population.push_back(temp_population);
 
-			// TODO do not clear this, update the population in the worker threads
-			//competitors[i]->population.clear();
-			
 			// The next fitness function master index location is at sum(i=0,i=prev_competitor,fitness_size)
 			// e.g. competitor 2's master index location for the local first value (i = 1, c_fitness[0]) is competitor_1.size()
 			// and the second local value (i = 1, c_fitness[1]) is competitor_1.size() + 1 and so on.
@@ -403,7 +377,6 @@ private:
 		}
 
 		rw.init(master_fitness);
-		//std::cout << "Setup breeding waiting for next breeding to finish" << std::endl;
 
 		if(final || solutions.size() > 0) {
 			done = true;
@@ -420,10 +393,6 @@ private:
 		double crossover_rate, unsigned int problem_size) {
 
 		std::vector<Chromosome<T> > new_population;
-
-		//std::cout << "Breeding" << std::endl;
-		//rw.init(fitness);
-
 
 		// Iterate through the chromosomes
 		//while(new_population.size() < population_size) {
@@ -461,8 +430,6 @@ private:
 			mutate(new_population.back(), mutation_rate);
 
 		}
-
-		//std::cout << "Finished Breeding" << std::endl;
 
 		// Update the population to the new population
 		return new_population;

@@ -1,12 +1,32 @@
+/**
+ *  The MIT License (MIT)
+ *
+ * Copyright (c) 2014  Joseph Heron, Jonathan Gillett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef SAFE_QUEUE_HPP_
 #define SAFE_QUEUE_HPP_
 
 #include <queue>
 #include <boost/thread/condition_variable.hpp>
-
-//#include <pthread.h>
-//#include <semaphore.h>
 
 template <typename T >
 class SafeQueue {
@@ -15,54 +35,23 @@ private:
 	std::queue<T > values;
 	boost::condition_variable m_cond;       // The condition to wait for
 	boost::mutex mtx_;
-	//pthread_mutex_t access_lock;
-	//sem_t access_resource;
 	bool stop_waiting;
-	//pthread_cond_t empty_wait;
 
 public:
 
-	SafeQueue()// : sem_(0)
+	SafeQueue()
 	{
-		//pthread_mutex_init(&access_lock, NULL);
-		//sem_init(&access_resource, 0, 0);
 		stop_waiting = false;
-		//pthread_cond_init(&empty_wait, 0);
-		//pthread_cond_signal(&self_adapt_wait);
 	}
 
 	~SafeQueue() {
-		//pthread_mutex_destroy(&access_lock);
-		//sem_destroy(&access_resource);
-		//pthread_cond_destroy(&empty_wait);
 	}
 
 	bool empty() {
 		boost::unique_lock<boost::mutex> lock(mtx_);
-		//pthread_mutex_lock(&access_lock);
 		bool e = values.empty();
-		//pthread_mutex_unlock(&access_lock);
 		return e;
 	}
-
-	/* Didnt really need this
-	typename std::queue<T >::size_type size() const {
-		pthread_mutex_lock(&access_lock);
-		auto s = values.size();
-		pthread_mutex_unlock(&access_lock);
-		return s;
-	}*/
-
-	/*
-	T waitToPop() {
-		boost::unique_lock<boost::mutex> guard(mtx_);
-		//sem_wait(&access_resource);
-		//if(stop_waiting) {
-		//	return T ();
-		//}
-		//TODO add in exit conidtion
-		return pop();
-	}*/
 
 	/**
 	 * Retrieves the next value from the queue. The value is also removed.
@@ -95,10 +84,8 @@ public:
 			return false;
 		}
 
-		//T val = values.front();
 		result = values.front();
 		values.pop();
-		//pthread_mutex_unlock(&access_lock);
 		return true;
 	}
 
@@ -213,15 +200,9 @@ public:
 	 *
 	 */
 	void push(T &val) {
-		//pthread_mutex_lock(&access_lock);
 		boost::unique_lock<boost::mutex> guard(mtx_);
 		values.push(val);
 		m_cond.notify_one();
-		//sem_.post();
-		//pthread_mutex_unlock(&access_lock);
-
-		// Identify that more jobs are available
-		//sem_post(&access_resource);
 	}
 
 	/**
