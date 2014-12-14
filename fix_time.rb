@@ -43,7 +43,7 @@ while(line = file.gets)
 end
 file.close()
 
-out = File.new("analysis/output_12132014_1443_fixed.cvs", "w")
+out = File.new("analysis/output_12132014_1443_fixed.csv", "w")
 
 new_text.each do |line|
 	out.puts line
